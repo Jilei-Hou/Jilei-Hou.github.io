@@ -103,7 +103,7 @@
 <h1 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h1><h2 id="评估指标-pass-k"><a href="#评估指标-pass-k" class="headerlink" title="评估指标---pass@k"></a>评估指标---pass@k</h2><p>NLP中最常见的评估方法是BLUE score（bilingual evaluation understudy）即：双语互译质量评估辅助工具。BLEU的设计思想：机器翻译结果越接近专业人工翻译的结果，则越好。BLEU算法实际上就是在判断两个句子的相似程度。想知道一个句子翻译前后的表示是否意思一致，直接的办法是拿这个句子的标准人工翻译与机器翻译的结果作比较，如果它们是很相似的，说明我的翻译很成功。</p>
 <p>可以看出，<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/338488036">BLUE score</a>是一个模糊匹配的过程，意思大差不差就行。但是编程是一个比较特殊的问题，一个小的差别可能就会带来灾难性的影响（永无止尽的Bug Fix）。</p>
 <p>针对代码补全这样一个特殊问题，作者提出了一个pass@k的一个指标，生成k个结果，只要有一个通过就算通过（k如果比较大，就会对模型的能力过度乐观，当k比较大的时候，虽然模型分数比较高，但是在使用时，会给用户返回一大堆代码，让用户去选，这个也是很难的，所以说需要排算法，但这个分数并没有反映排序）。</p>
-<p><img src="/..%5Cimg%5CCodex%5Cpass@k.png" alt="pass@k"></p>
+<p><img src="/../img/Codex/pass@k.png" alt="pass@k"></p>
 <p>n生成的候补答案总数，k每次选的答案，c代表能通过单元测试的答案（n&#x3D;200，k&lt;&#x3D;100，c&lt;&#x3D;n）</p>
 <h2 id="评估数据集—HumanEval"><a href="#评估数据集—HumanEval" class="headerlink" title="评估数据集—HumanEval"></a>评估数据集—HumanEval</h2><p>HumanEval（Hand-Written Evaluation Set）包含164个<strong>人工设计</strong>的编程问题，每个问题包含函数名、注释、函数体、多个单元测试</p>
 <p>手动实现是非常重要的：因为如果直接从网上找，比如说从leetcode上去扒，很有可能你的这个问题就在你在训练集里面（数据泄露）</p>

@@ -74,12 +74,22 @@
     <article id="post-Codex" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2022/06/11/Codex/" class="article-date">
-  <time class="dt-published" datetime="2022-06-11T03:14:53.923Z" itemprop="datePublished">2022-06-11</time>
+  <time class="dt-published" datetime="2022-06-11T08:38:00.000Z" itemprop="datePublished">2022-06-11</time>
 </a>
     
   </div>
   <div class="article-inner">
     
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2022/06/11/Codex/">Codex</a>
+    </h1>
+  
+
+      </header>
     
     <div class="e-content article-entry" itemprop="articleBody">
       
@@ -118,33 +128,41 @@
 <li>生成代码时，什么时候停止：遇到了 ‘\nclass’, ‘\ndef’, ‘\n#’, ‘\nif’, ‘\nprint’ 等就停掉代码</li>
 </ol>
 <p>评估采样时，使用p&#x3D;0.95的核采样（nucleus sampling）：就是说将所有候补答案，按概率从高到低排序，依次拿出来，指导所有选出来的候补的概率和大于0.95，就停止采样。</p>
-<h2 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h2><p><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=ZjJjZjg0OGUwNTkzZTE3NDgzMTRiZjgyZGQwYjYwZjZfOTBEZjZtT3RkSW5MZzVSeDBDY3QwVW5lUWZJRmVIc2NfVG9rZW46Ym94Y25LTzlUbUQ1S2VSeEYzYmd1R1g2eU1zXzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></p>
-<p>模型大小和损失之间的关系：模型参数指数级上升时，损失线性下降</p>
+<h2 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h2><ol>
+<li>模型大小和损失之间的关系：模型参数指数级上升时，损失线性下降</li>
+</ol>
+<p><img src="/../img/Codex/2.png" alt="模型大小和损失之间的关系"></p>
+<ol start="2">
+<li><p>作者在算softmax前，会除以某一个T。T较大时，各个候选的概率比较相近，T较小时，各个候选的概率分的比较开。如果用一个较小的T，最好的几个候选，概率较大，采样的时候总能把最好的几个取出来，如果用一个较大的T，不是最好的几个候选也能被采样出来</p>
+<ul>
+<li><p>左图反映采样次数和T之间的关系：不同的T，随着采样次数的增加，pass@k的变化</p>
+</li>
+<li><p>右图反映不同采样次数下最好的T：随着允许采样的数目增加，最好的T越大（假如说我只允许你选一个，那么你最应该选择出最好的候选答案，那就对应比较小的T）</p>
+</li>
+</ul>
+</li>
+</ol>
 <table>
 <thead>
 <tr>
-<th><img src="/img/Codex/pass@k.png" alt="img"></th>
-<th><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=MjRjM2ZjMGM5YmIyMGMwMWE3NDM3MjU1YWYxZTNkZjdfaG1QSjZzRzBuZUEzWjJXamhod25vVXpJdHhRZUFlSThfVG9rZW46Ym94Y244UENNZlc2NEhFeGRDRnl6MnU0ZExnXzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></th>
+<th><img src="/../img/Codex/3.png" alt="采样次数和T之间的关系"></th>
+<th><img src="/../img/Codex/4.png" alt="不同采样次数下最好的T"></th>
 </tr>
 </thead>
-<tbody><tr>
-<td></td>
-<td></td>
-</tr>
-</tbody></table>
-<p>作者在算softmax前，会除以某一个T。T较大时，各个候选的概率比较相近，T较小时，各个候选的概率分的比较开。如果用一个较小的T，最好的几个候选，概率较大，采样的时候总能把最好的几个取出来，如果用一个较大的T，不是最好的几个候选也能被采样出来</p>
-<p>左图反映采样次数和T之间的关系：不同的T，随着采样次数的增加，pass@k的变化</p>
-<p>右图反映不同采样次数下最好的T：随着允许采样的数目增加，最好的T越大（假如说我只允许你选一个，那么你最应该选择出最好的候选答案，那就对应比较小的T）</p>
-<p><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=NzJiZmE2MWJhNjE5NzIyYzc3ZDhhZGU0NmYxYjNhZjJfdEpmMHVwbkdSY2t5UklZNk9qUXY1eGQ5Y1lxeWFQd25fVG9rZW46Ym94Y25lU2R2WE1SdnF3UkRHYlRnbVUzMnFnXzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></p>
-<p>上图反映不同排序算法（从生成的k的答案里面选出最好的）：Oracle代表使用了先验（就是把取出来的k的候选，放到单元测试上测一下，选择能通过的候选出来），那么明显随着k增大，通过率越高。</p>
-<p><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=M2EyYWY3ZjNjMzAxNjUwOGFjNDQyYThlMTg2NGM0ZmRfOTFrZGxmYXVocXh6T0taWFJHU1V3d0ttd3pKTElzY2VfVG9rZW46Ym94Y25kbnhzbVFTd2t1NUMzeUVzZnJTTEhnXzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></p>
-<p>关于BLUE score：作者在HumanEval的4个随机任务上测了BLUE score，可以看出，BLUE分数的高低与答案正确并没有直接关系，也印证了作者前面说的不能使用BLUE score的原因</p>
-<p><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=ZjdiMmZjNGNlYzQyYzc5ZTczNGIzMmU0MGJkMjM0NWVfUkRUN2lwSU5QNXloeHdnZ3pHdndQOGFJNURLT3hOdTRfVG9rZW46Ym94Y241eWpWbU5Ec1Q4SW1kRzNTcEh3N3lnXzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></p>
-<p>Codex和GPT-NEO、GPT-J、<a target="_blank" rel="noopener" href="https://www.tabnine.com/">TABNINE</a>的性能对比</p>
+</table>
+<ol start="3">
+<li>下图反映不同排序算法（从生成的k的答案里面选出最好的）：Oracle代表使用了先验（就是把取出来的k的候选，放到单元测试上测一下，选择能通过的候选出来），那么明显随着k增大，通过率越高。</li>
+</ol>
+<p><img src="/../img/Codex/5.png" alt="不同排序算法"></p>
+<ol start="4">
+<li>关于BLUE score：作者在HumanEval的4个随机任务上测了BLUE score，可以看出，BLUE分数的高低与答案正确并没有直接关系，也印证了作者前面说的不能使用BLUE score的原因</li>
+</ol>
+<p><img src="/../img/Codex/6.png" alt="关于BLUE score"></p>
+<ol start="5">
+<li>Codex和GPT-NEO、GPT-J、<a target="_blank" rel="noopener" href="https://www.tabnine.com/">TABNINE</a>的性能对比</li>
+</ol>
+<p><img src="/../img/Codex/7.png" alt="Codex和其他方法的性能对比"></p>
 <h1 id="Codex-S"><a href="#Codex-S" class="headerlink" title="Codex-S"></a>Codex-S</h1><p>使用跟HumanEval更相近数据集作为的训练集，在上面训练得到的模型叫Codex-S</p>
-<blockquote>
-<p>HumanEval（Hand-Written Evaluation Set）包含164个<strong>人工设计</strong>的编程问题，每个问题包含函数名、注释、函数体、多个单元测试</p>
-</blockquote>
 <p>得到训练集的方法:</p>
 <ol>
 <li>程序竞赛的题目</li>
@@ -154,15 +172,11 @@
 <table>
 <thead>
 <tr>
-<th><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=NTc1YzZiZmI3YzY0MTliMTcwOWYzMjZkNWFhYzE1YzdfQnVqbnMwdE1jRWk2bFM2eTMybEFIZzkwaTZvd0U4QUtfVG9rZW46Ym94Y25ISjVDV045SFM5UFdERmpyOVhEa2piXzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></th>
-<th><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=N2ExYmY1YjJiMDc1MjNmMjAwOTRiYTVmYzM0ZjhhZTFfc0pOWk1ZQzBaWDJ5d1RzMmdVNVlFbW5sTDcxUER0RzlfVG9rZW46Ym94Y25EYm1jaXE0SHZId1FEeFVtbWVhWDBiXzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></th>
+<th><img src="/../img/Codex/8.png" alt="Codex-S和Codex"></th>
+<th><img src="/../img/Codex/9.png" alt="Codex-S和Codex"></th>
 </tr>
 </thead>
-<tbody><tr>
-<td></td>
-<td></td>
-</tr>
-</tbody></table>
+</table>
 <p>左图反映Codex-S和Codex间在模型增大时，pass@k的分数：实线Codex-S，虚线就是Codex</p>
 <p>右图反映Codex-S和Codex不同使用排序算法间的差别</p>
 <h1 id="另外的应用—生成文档（Codex-D）"><a href="#另外的应用—生成文档（Codex-D）" class="headerlink" title="另外的应用—生成文档（Codex-D）"></a>另外的应用—生成文档（Codex-D）</h1><p>数据集调整：把docstring放到最后面（函数名和函数体后面）</p>
@@ -177,7 +191,7 @@
 <li>受注释影响较大</li>
 <li>做数学相关的代码比较差</li>
 </ol>
-<p><img src="https://horizonrobotics.feishu.cn/space/api/box/stream/download/asynccode/?code=OGU1YzE3NzM5NzVkNDM5Yjc0NDgzNWQyNDcwNmY1MzRfUkNPY3ViOUl3c2NsWG50TEtFaGRhRDl4Mm1UZUk0NHlfVG9rZW46Ym94Y25SU3NCc2ZhNTd5T01uWm43ZzRXVTR3XzE2NTQ5MTcyNzA6MTY1NDkyMDg3MF9WNA" alt="img"></p>
+<p><img src="/../img/Codex/10.png" alt="处理数学代码示例"></p>
 <h1 id="可能影响"><a href="#可能影响" class="headerlink" title="可能影响"></a>可能影响</h1><ol>
 <li>过度依赖模型生成的代码</li>
 <li>模型可能能生成你想要的答案，但是他会按照训练数据集的风格去写，可能跟你想要的风格不一样</li>
@@ -200,10 +214,12 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2022/06/11/Codex/" data-id="cl49b4b8w00006su13or1fns9" data-title="" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2022/06/11/Codex/" data-id="cl49ms52p0000j0u19eum0pv0" data-title="Codex" class="article-share-link">Share</a>
       
       
       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AF%BB%E8%AE%BA%E6%96%87/" rel="tag">读论文</a></li></ul>
+
     </footer>
   </div>
   
@@ -320,9 +336,23 @@
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AF%BB%E8%AE%BA%E6%96%87/" rel="tag">读论文</a></li></ul>
+    </div>
+  </div>
+
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/%E8%AF%BB%E8%AE%BA%E6%96%87/" style="font-size: 10px;">读论文</a>
+    </div>
+  </div>
+
   
     
   <div class="widget-wrap">
@@ -341,7 +371,7 @@
       <ul>
         
           <li>
-            <a href="/2022/06/11/Codex/">(no title)</a>
+            <a href="/2022/06/11/Codex/">Codex</a>
           </li>
         
           <li>

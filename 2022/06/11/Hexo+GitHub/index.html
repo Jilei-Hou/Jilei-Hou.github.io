@@ -2,15 +2,15 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Hexo+GitHub搭建属于你的博客 | Hexo</title>
+  <title>Hexo+GitHub搭建属于你的博客 | 455のblog</title>
   <meta name="keywords" content=" Hexo , GitHub ">
-  <meta name="description" content="Hexo+GitHub搭建属于你的博客 | Hexo">
+  <meta name="description" content="Hexo+GitHub搭建属于你的博客 | 455のblog">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="description" content="哪个码农没想过拥有属于自己的个人博客呢。本文将详细介绍使用Hexo+GitHub搭建属于你的个人博客 GitHub创建仓库相信大家都有自己的GitHub账户（毕竟全球最大的交友网站，哪个程序员不爱呢） 新建一个GitHub仓库，仓库名应该为：用户名.github.io这个用户名必须是你的GitHub帐号名称（MUST） 例如我的仓库名就是Jilei-Hou.github.io 安装Git及ssh">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hexo+GitHub搭建属于你的博客">
 <meta property="og:url" content="http://example.com/2022/06/11/Hexo+GitHub/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:site_name" content="455のblog">
 <meta property="og:description" content="哪个码农没想过拥有属于自己的个人博客呢。本文将详细介绍使用Hexo+GitHub搭建属于你的个人博客 GitHub创建仓库相信大家都有自己的GitHub账户（毕竟全球最大的交友网站，哪个程序员不爱呢） 新建一个GitHub仓库，仓库名应该为：用户名.github.io这个用户名必须是你的GitHub帐号名称（MUST） 例如我的仓库名就是Jilei-Hou.github.io 安装Git及ssh">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/img/HexoGitHub/1.png">
@@ -27,7 +27,7 @@
 
 <link href="/css/style.css?v=1.1.0" rel="stylesheet">
 
-<link href="/css/hl_theme/atom-light.css?v=1.1.0" rel="stylesheet">
+<link href="/css/hl_theme/github.css?v=1.1.0" rel="stylesheet">
 
 <link href="//cdn.jsdelivr.net/npm/animate.css@4.1.0/animate.min.css" rel="stylesheet">
 
@@ -165,7 +165,7 @@
     </div>
 </div>
 <input type="hidden" id="yelog_site_posts_number" value="4">
-
+<input type="hidden" id="yelog_site_word_count" value="2.7k">
 <div style="display: none">
     <span id="busuanzi_value_site_uv"></span>
     <span id="busuanzi_value_site_pv"></span>
@@ -321,6 +321,8 @@
     </div>
     <div class="article-meta">
         
+        <span>Count:378</span>
+        
         
         <span id="busuanzi_container_page_pv">
             Views 👀 :<span id="busuanzi_value_page_pv">
@@ -446,8 +448,6 @@
     function initArticle() {
         /*渲染对应的表格样式*/
         
-            $("#post .pjax table").addClass("green_title");
-        
 
         /*渲染打赏样式*/
         
@@ -552,6 +552,16 @@
     /*文章列表背景图*/
     
 
+    
+    #post .pjax article :not(pre) > code {
+        color: #24292e;
+        font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,Courier,monospace;
+        background-color: rgba(27,31,35,.05);
+        border-radius: 3px;
+        font-size: 85%;
+        margin: 0;
+        padding: .2em .4em;
+    }
     
 </style>
 

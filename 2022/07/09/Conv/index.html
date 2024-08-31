@@ -2,9 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Hexo+GitHub搭建属于你的博客 | 455のblog</title>
-  <meta name="keywords" content=" Hexo , GitHub ">
-  <meta name="description" content="Hexo+GitHub搭建属于你的博客 | 455のblog">
+  <title>Conv | 455のblog</title>
+  <meta name="keywords" content=" Conv , ONNX ">
+  <meta name="description" content="Conv | 455のblog">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="description" content="为什么需要激活函数？神经网络的每一个神经元的工作流程可以总结为下图：  数学表达：  那么为什么需要激活函数？ 从上图可以看出，神经网络中每一层的输入输出其实都是一个线性求和的过程，下一层的输出只是承接了上一层输入函数的线性变换，所以如果没有激活函数，那么无论你构造的神经网络多么复杂，有多少层，最后的输出都是输入的线性组合，纯粹的线性组合并不能够解决更为复杂的问题。激活函数可以向神经网络中引入非线">
 <meta property="og:type" content="article">
@@ -360,9 +360,9 @@
 </aside>
 <div id="post">
     <div class="pjax">
-        <article id="post-Hexo+GitHub" class="article article-type-post" itemscope itemprop="blogPost">
+        <article id="post-Conv" class="article article-type-post" itemscope itemprop="blogPost">
     
-        <h1 class="article-title">Hexo+GitHub搭建属于你的博客</h1>
+        <h1 class="article-title">Conv</h1>
     
     <div class="article-meta">
         
@@ -372,7 +372,9 @@
             <i class="iconfont icon-category"></i>
             
             
-            <a  data-rel="好玩的技术">好玩的技术</a>
+            <a  data-rel="模型量化">模型量化</a> > 
+            
+            <a  data-rel="模型量化&lt;---&gt;算子">算子</a>
             
         </span>
         
@@ -380,21 +382,21 @@
         <span class="tag">
             <i class="iconfont icon-tag"></i>
             
-            <a class="color5">Hexo</a>
+            <a class="color5">Conv</a>
             
-            <a class="color2">GitHub</a>
+            <a class="color5">ONNX</a>
             
         </span>
         
     </div>
     <div class="article-meta">
         
-            Created At : <time class="date" title='Updated At: 2024-08-31 11:49:26'>2022-06-11 16:55</time>
+            Created At : <time class="date" title='Updated At: 2022-07-09 15:43:18'>2022-07-09 14:26</time>
         
     </div>
     <div class="article-meta">
         
-        <span>Count:426</span>
+        <span>Count:318</span>
         
         
         <span id="busuanzi_container_page_pv">
@@ -413,7 +415,7 @@
     
     <div class="toc-ref">
     
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#GitHub%E5%88%9B%E5%BB%BA%E4%BB%93%E5%BA%93"><span class="toc-text">GitHub创建仓库</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85Git%E5%8F%8Assh-key%E9%85%8D%E7%BD%AE"><span class="toc-text">安装Git及ssh key配置</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85Node-js"><span class="toc-text">安装Node.js</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85Hexo"><span class="toc-text">安装Hexo</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8F%92%E5%85%A5%E5%9B%BE%E7%89%87"><span class="toc-text">插入图片</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%B6%E4%BB%96%E9%97%AE%E9%A2%98"><span class="toc-text">其他问题</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E5%8D%B7%E7%A7%AF%EF%BC%9F"><span class="toc-text">什么卷积？</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E5%92%8C%E5%8D%B7%E7%A7%AF%E6%A0%B8%E3%80%81%E6%AD%A5%E9%95%BF%E3%80%81%E5%A1%AB%E5%85%85%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-text">输入输出和卷积核、步长、填充间的关系</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-text">参考资料</span></a></li></ol>
     
 <style>
     .left-col .switch-btn,
@@ -429,74 +431,22 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>哪个码农没想过拥有属于自己的个人博客呢。本文将详细介绍使用Hexo+GitHub搭建属于你的个人博客</p>
-<h1 id="GitHub创建仓库"><a href="#GitHub创建仓库" class="headerlink" title="GitHub创建仓库"></a>GitHub创建仓库</h1><p>相信大家都有自己的GitHub账户（毕竟全球最大的交友网站，哪个程序员不爱呢）</p>
-<p>新建一个GitHub仓库，仓库名应该为：用户名.github.io这个<strong>用户名</strong>必须是你的GitHub帐号名称（MUST）</p>
-<p>例如我的仓库名就是Jilei-Hou.github.io</p>
-<h1 id="安装Git及ssh-key配置"><a href="#安装Git及ssh-key配置" class="headerlink" title="安装Git及ssh key配置"></a>安装Git及ssh key配置</h1><p>coming soon</p>
-<h1 id="安装Node-js"><a href="#安装Node-js" class="headerlink" title="安装Node.js"></a>安装Node.js</h1><p><a target="_blank" rel="noopener" href="https://nodejs.org/en/download/">Download | Node.js (nodejs.org)</a></p>
-<p>使用以下命令查看是否安装成功</p>
-<p><img src="/../img/HexoGitHub/1.png" alt="测试安装"></p>
-<h1 id="安装Hexo"><a href="#安装Hexo" class="headerlink" title="安装Hexo"></a>安装Hexo</h1><ol>
-<li>安装</li>
+        <p>卷积作为深度学习的基础概念，入门深度学习，不可能绕过卷积。但你真的了解各种卷积吗？</p>
+<p>2D &#x2F; 3D &#x2F; 1x1 &#x2F;转置&#x2F;扩张（Atrous）&#x2F;空间可分&#x2F;深度可分&#x2F;平展&#x2F;分组&#x2F;混洗分组卷积</p>
+<h1 id="什么卷积？"><a href="#什么卷积？" class="headerlink" title="什么卷积？"></a>什么卷积？</h1><p><img src="/2022/07/09/Conv/Users\HJL\Desktop\Hexo\source\img\Conv\R-C.gif"></p>
+<p>卷积的过程如上图，简单来说，卷积其实就是通过某个卷积核不断地与输入进行内积，得到输出。</p>
+<p>其中涉及到很多其他问题：</p>
+<ol>
+<li>卷积核（kernel）：用于对输入进行共享权值的遍历，上图中每次阴影部分3*3都会与卷积核内积</li>
+<li>步长（stride）：即每次内积后移动的幅度</li>
+<li>填充（padding）：为了保持输出的尺寸，需要在输入图像进行上填充，使用padding后的输出 &#x3D; padding前的输出+2*padding</li>
 </ol>
-<pre><code class="bash">npm install -g hexo-cli 
-</code></pre>
-<ol start="2">
-<li>初始化</li>
-</ol>
-<pre><code class="bash">hexo init blog
-</code></pre>
-<ol start="3">
-<li>新建文件</li>
-</ol>
-<pre><code class="bash">hexo new test_my_site
-</code></pre>
-<ol start="4">
-<li>生成（hexo g &#x3D;&#x3D; hexo generate）</li>
-</ol>
-<pre><code class="bash">hexo g
-# 或者
-hexo generate
-</code></pre>
-<ol start="5">
-<li>启动服务预览（hexo s &#x3D;&#x3D; hexo server）</li>
-</ol>
-<pre><code class="bash">hexo s
-# 或者
-hexo server
-</code></pre>
-<p>本地打开 <a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000/</a> 网页可以预览自己的博客（只可以本地哦，他人看不到）</p>
-<ol start="6">
-<li>部署（hexo d &#x3D;&#x3D; hexo deploy）</li>
-</ol>
-<pre><code class="bash">hexo d
-# 或者
-hexo deplo
-</code></pre>
-<p>打开 https:&#x2F;&#x2F;用户名.github.io&#x2F; 网页可以预览自己的博客（只可以本地哦，他人看不到）</p>
-<p>例如我的博客网页就是：<a target="_blank" rel="noopener" href="https://jilei-hou.github.io/">https://jilei-hou.github.io/</a></p>
-<h1 id="插入图片"><a href="#插入图片" class="headerlink" title="插入图片"></a>插入图片</h1><p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/8d28027fec76">hexo+github上传图片到博客 - 简书 (jianshu.com)</a></p>
-<p>安装如下插件</p>
-<pre><code>npm install hexo-renderer-marked
-</code></pre>
-<p>修改_config.yaml文件</p>
-<pre><code class="yaml">post_asset_folder: true
-marked:
-  prependRoot: true
-  postAsset: true
-</code></pre>
-<p>之后就可以在使用<code>![](image.jpg)</code>的方式愉快的插入图片了。</p>
-<p>参考链接：</p>
-<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/26625249">GitHub+Hexo 搭建个人网站详细教程 - 知乎 (zhihu.com)</a></p>
-<h1 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h1><ol>
-<li><p>npm -v 不是内部命令</p>
-<p>需要将C:\Users\HJL\AppData\Roaming\npm 添加到环境变量</p>
-</li>
-<li><p>node -v 不是内部命令</p>
-<p>C:\Program Files\nodejs 添加到环境变量</p>
-</li>
-</ol>
+<h2 id="输入输出和卷积核、步长、填充间的关系"><a href="#输入输出和卷积核、步长、填充间的关系" class="headerlink" title="输入输出和卷积核、步长、填充间的关系"></a>输入输出和卷积核、步长、填充间的关系</h2><p>假设输入为C*H*W，padding &#x3D; p，kernel size为k*k，步长为s</p>
+<p>输出：C*H<sub>out</sub>*W<sub>out</sub></p>
+<p>每个维度单独卷积，维度不会变，还是C</p>
+<p>H<sub>out</sub> &#x3D; (H + 2*p - k)&#x2F;s + 1</p>
+<p>W<sub>out</sub> &#x3D; (W + 2*p - k)&#x2F;s + 1</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/57575810">卷积有多少种？一文读懂深度学习中的各种卷积 - 知乎 (zhihu.com)</a></p>
 
       
        <hr><span style="font-style: italic;color: gray;"> 转载请注明来源，欢迎对文章中的引用来源进行考证，欢迎指出任何有错误或不够清晰的表达。可以在下面评论区评论，也可以邮件至houjilei455@qq.com </span>

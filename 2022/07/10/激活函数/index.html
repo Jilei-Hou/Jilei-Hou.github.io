@@ -2,9 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Hexo+GitHub搭建属于你的博客 | 455のblog</title>
-  <meta name="keywords" content=" Hexo , GitHub ">
-  <meta name="description" content="Hexo+GitHub搭建属于你的博客 | 455のblog">
+  <title>激活函数 | 455のblog</title>
+  <meta name="keywords" content=" ONNX ">
+  <meta name="description" content="激活函数 | 455のblog">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="description" content="为什么需要激活函数？神经网络的每一个神经元的工作流程可以总结为下图：  数学表达：  那么为什么需要激活函数？ 从上图可以看出，神经网络中每一层的输入输出其实都是一个线性求和的过程，下一层的输出只是承接了上一层输入函数的线性变换，所以如果没有激活函数，那么无论你构造的神经网络多么复杂，有多少层，最后的输出都是输入的线性组合，纯粹的线性组合并不能够解决更为复杂的问题。激活函数可以向神经网络中引入非线">
 <meta property="og:type" content="article">
@@ -360,9 +360,9 @@
 </aside>
 <div id="post">
     <div class="pjax">
-        <article id="post-Hexo+GitHub" class="article article-type-post" itemscope itemprop="blogPost">
+        <article id="post-激活函数" class="article article-type-post" itemscope itemprop="blogPost">
     
-        <h1 class="article-title">Hexo+GitHub搭建属于你的博客</h1>
+        <h1 class="article-title">激活函数</h1>
     
     <div class="article-meta">
         
@@ -372,7 +372,9 @@
             <i class="iconfont icon-category"></i>
             
             
-            <a  data-rel="好玩的技术">好玩的技术</a>
+            <a  data-rel="模型量化">模型量化</a> > 
+            
+            <a  data-rel="模型量化&lt;---&gt;算子">算子</a>
             
         </span>
         
@@ -380,21 +382,19 @@
         <span class="tag">
             <i class="iconfont icon-tag"></i>
             
-            <a class="color5">Hexo</a>
-            
-            <a class="color2">GitHub</a>
+            <a class="color5">ONNX</a>
             
         </span>
         
     </div>
     <div class="article-meta">
         
-            Created At : <time class="date" title='Updated At: 2024-08-31 11:49:26'>2022-06-11 16:55</time>
+            Created At : <time class="date" title='Updated At: 2022-07-17 15:15:59'>2022-07-10 16:41</time>
         
     </div>
     <div class="article-meta">
         
-        <span>Count:426</span>
+        <span>Count:1.3k</span>
         
         
         <span id="busuanzi_container_page_pv">
@@ -413,7 +413,7 @@
     
     <div class="toc-ref">
     
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#GitHub%E5%88%9B%E5%BB%BA%E4%BB%93%E5%BA%93"><span class="toc-text">GitHub创建仓库</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85Git%E5%8F%8Assh-key%E9%85%8D%E7%BD%AE"><span class="toc-text">安装Git及ssh key配置</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85Node-js"><span class="toc-text">安装Node.js</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85Hexo"><span class="toc-text">安装Hexo</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8F%92%E5%85%A5%E5%9B%BE%E7%89%87"><span class="toc-text">插入图片</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%B6%E4%BB%96%E9%97%AE%E9%A2%98"><span class="toc-text">其他问题</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0%EF%BC%9F"><span class="toc-text">为什么需要激活函数？</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Sigmoid"><span class="toc-text">Sigmoid</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Tanh"><span class="toc-text">Tanh</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ReLu"><span class="toc-text">ReLu</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#LReLU"><span class="toc-text">LReLU</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#PReLU"><span class="toc-text">PReLU</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Elu"><span class="toc-text">Elu</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Selu"><span class="toc-text">Selu</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Gelu"><span class="toc-text">Gelu</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99%EF%BC%9A"><span class="toc-text">参考资料：</span></a></li></ol>
     
 <style>
     .left-col .switch-btn,
@@ -429,74 +429,48 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>哪个码农没想过拥有属于自己的个人博客呢。本文将详细介绍使用Hexo+GitHub搭建属于你的个人博客</p>
-<h1 id="GitHub创建仓库"><a href="#GitHub创建仓库" class="headerlink" title="GitHub创建仓库"></a>GitHub创建仓库</h1><p>相信大家都有自己的GitHub账户（毕竟全球最大的交友网站，哪个程序员不爱呢）</p>
-<p>新建一个GitHub仓库，仓库名应该为：用户名.github.io这个<strong>用户名</strong>必须是你的GitHub帐号名称（MUST）</p>
-<p>例如我的仓库名就是Jilei-Hou.github.io</p>
-<h1 id="安装Git及ssh-key配置"><a href="#安装Git及ssh-key配置" class="headerlink" title="安装Git及ssh key配置"></a>安装Git及ssh key配置</h1><p>coming soon</p>
-<h1 id="安装Node-js"><a href="#安装Node-js" class="headerlink" title="安装Node.js"></a>安装Node.js</h1><p><a target="_blank" rel="noopener" href="https://nodejs.org/en/download/">Download | Node.js (nodejs.org)</a></p>
-<p>使用以下命令查看是否安装成功</p>
-<p><img src="/../img/HexoGitHub/1.png" alt="测试安装"></p>
-<h1 id="安装Hexo"><a href="#安装Hexo" class="headerlink" title="安装Hexo"></a>安装Hexo</h1><ol>
-<li>安装</li>
-</ol>
-<pre><code class="bash">npm install -g hexo-cli 
-</code></pre>
-<ol start="2">
-<li>初始化</li>
-</ol>
-<pre><code class="bash">hexo init blog
-</code></pre>
-<ol start="3">
-<li>新建文件</li>
-</ol>
-<pre><code class="bash">hexo new test_my_site
-</code></pre>
-<ol start="4">
-<li>生成（hexo g &#x3D;&#x3D; hexo generate）</li>
-</ol>
-<pre><code class="bash">hexo g
-# 或者
-hexo generate
-</code></pre>
-<ol start="5">
-<li>启动服务预览（hexo s &#x3D;&#x3D; hexo server）</li>
-</ol>
-<pre><code class="bash">hexo s
-# 或者
-hexo server
-</code></pre>
-<p>本地打开 <a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000/</a> 网页可以预览自己的博客（只可以本地哦，他人看不到）</p>
-<ol start="6">
-<li>部署（hexo d &#x3D;&#x3D; hexo deploy）</li>
-</ol>
-<pre><code class="bash">hexo d
-# 或者
-hexo deplo
-</code></pre>
-<p>打开 https:&#x2F;&#x2F;用户名.github.io&#x2F; 网页可以预览自己的博客（只可以本地哦，他人看不到）</p>
-<p>例如我的博客网页就是：<a target="_blank" rel="noopener" href="https://jilei-hou.github.io/">https://jilei-hou.github.io/</a></p>
-<h1 id="插入图片"><a href="#插入图片" class="headerlink" title="插入图片"></a>插入图片</h1><p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/8d28027fec76">hexo+github上传图片到博客 - 简书 (jianshu.com)</a></p>
-<p>安装如下插件</p>
-<pre><code>npm install hexo-renderer-marked
-</code></pre>
-<p>修改_config.yaml文件</p>
-<pre><code class="yaml">post_asset_folder: true
-marked:
-  prependRoot: true
-  postAsset: true
-</code></pre>
-<p>之后就可以在使用<code>![](image.jpg)</code>的方式愉快的插入图片了。</p>
-<p>参考链接：</p>
-<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/26625249">GitHub+Hexo 搭建个人网站详细教程 - 知乎 (zhihu.com)</a></p>
-<h1 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h1><ol>
-<li><p>npm -v 不是内部命令</p>
-<p>需要将C:\Users\HJL\AppData\Roaming\npm 添加到环境变量</p>
-</li>
-<li><p>node -v 不是内部命令</p>
-<p>C:\Program Files\nodejs 添加到环境变量</p>
-</li>
-</ol>
+        <h1 id="为什么需要激活函数？"><a href="#为什么需要激活函数？" class="headerlink" title="为什么需要激活函数？"></a>为什么需要激活函数？</h1><p>神经网络的每一个神经元的工作流程可以总结为下图：</p>
+<p><img src="/../img/Activate/1.jpg" alt="神经元工作流程"></p>
+<p>数学表达：</p>
+<p><img src="/../img/Activate/2.jpg" alt="数学表达"></p>
+<p>那么为什么需要激活函数？</p>
+<p>从上图可以看出，神经网络中每一层的输入输出其实都是一个线性求和的过程，下一层的输出只是承接了上一层输入函数的线性变换，所以如果没有激活函数，那么无论你构造的神经网络多么复杂，有多少层，最后的输出都是输入的线性组合，纯粹的线性组合并不能够解决更为复杂的问题。<strong>激活函数可以向神经网络中引入非线性因素，通过激活函数神经网络就可以拟合各种曲线。</strong></p>
+<p>下面介绍一些常用的激活函数：</p>
+<h1 id="Sigmoid"><a href="#Sigmoid" class="headerlink" title="Sigmoid"></a>Sigmoid</h1><p>Sigmoid函数也叫Logistic函数，用于隐层神经元输出，取值范围为(0,1)，它可以将一个实数映射到(0,1)的区间，可以用来做二分类。在特征相差比较复杂或是相差不是特别大时效果比较好。sigmoid是一个十分常见的激活函数，函数的表达式如下：<br>$$<br>f(x) &#x3D; \frac{1}{1+e^{-x}}<br>$$<br>函数图像如下：</p>
+<p><img src="/../img/Activate/3.jpg" alt="Sigmoid函数图像"></p>
+<p><strong>在什么情况下适合使用 Sigmoid 激活函数呢？</strong></p>
+<ul>
+<li>Sigmoid 函数的输出范围是 0 到 1。由于输出值限定在 0 到1，因此它对每个神经元的输出进行了归一化；</li>
+<li>用于将预测概率作为输出的模型。由于概率的取值范围是 0 到 1，因此 Sigmoid 函数非常合适；</li>
+<li>梯度平滑，避免「跳跃」的输出值；</li>
+<li>函数是可微的。这意味着可以找到任意两个点的 sigmoid 曲线的斜率；</li>
+<li>明确的预测，即非常接近 1 或 0。</li>
+</ul>
+<p><strong>Sigmoid 激活函数存在的不足：</strong></p>
+<ul>
+<li><strong>梯度消失</strong>：注意：Sigmoid 函数趋近 0 和 1 的时候变化率会变得平坦，也就是说，Sigmoid 的梯度趋近于 0。神经网络使用 Sigmoid 激活函数进行反向传播时，输出接近 0 或 1 的神经元其梯度趋近于 0。这些神经元叫作饱和神经元。因此，这些神经元的权重不会更新。此外，与此类神经元相连的神经元的权重也更新得很慢。该问题叫作梯度消失。因此，想象一下，如果一个大型神经网络包含 Sigmoid 神经元，而其中很多个都处于饱和状态，那么该网络无法执行反向传播。</li>
+<li><strong>不以零为中心</strong>：Sigmoid 输出不以零为中心的,，输出恒大于0，非零中心化的输出会使得其后一层的神经元的输入发生偏置偏移（Bias Shift），并进一步使得梯度下降的收敛速度变慢。</li>
+<li><strong>计算成本高昂</strong>：exp() 函数与其他非线性激活函数相比，计算成本高昂，计算机运行起来速度较慢。</li>
+</ul>
+<h1 id="Tanh"><a href="#Tanh" class="headerlink" title="Tanh"></a>Tanh</h1><h1 id="ReLu"><a href="#ReLu" class="headerlink" title="ReLu"></a>ReLu</h1><p>ReLU函数又称为修正线性单元（Rectified Linear Unit），是一种分段线性函数，其弥补了sigmoid函数以及tanh函数的梯度消失问题，在目前的深度神经网络中被广泛使用。ReLU函数本质上是一个斜坡（ramp）函数，公式及函数图像如下：<br>$$<br>f(x) &#x3D; max(0, x)<br>     &#x3D; \left{<br>           \begin{array}{lc}<br>           x, &amp; x \geqslant 0 \<br>           0,&amp;x&lt;0\<br>           \end{array}<br>       \right.<br>$$<br><img src="/../img/Activate/4.jpg" alt="Relu图像"></p>
+<p>ReLU 函数是深度学习中较为流行的一种激活函数，相比于 sigmoid 函数和 tanh 函数，它具有如下优点：</p>
+<ul>
+<li>当输入为正时，导数为1，一定程度上改善了梯度消失问题，加速梯度下降的收敛速度；</li>
+<li>计算速度快得多。ReLU 函数中只存在线性关系，因此它的计算速度比 sigmoid 和 tanh 更快。</li>
+<li>被认为具有生物学合理性（Biological Plausibility）,比如单侧抑制、宽兴奋边界（即兴奋程度可以非常高）</li>
+</ul>
+<p><strong>ReLU函数的不足：</strong></p>
+<ul>
+<li>Dead ReLU 问题。当输入为负时，ReLU 完全失效，在正向传播过程中，这不是问题。有些区域很敏感，有些则不敏感。但是在反向传播过程中，如果输入负数，则梯度将完全为零；</li>
+</ul>
+<blockquote>
+<p><strong>【Dead ReLU问题】</strong>ReLU神经元在训练时比较容易“死亡”。在训练时，如果参数在一次不恰当的更新后，第一个隐藏层中的某个ReLU 神经元在所有的训练数据上都不能被激活，那么这个神经元自身参数的梯度永远都会是0，在以后的训练过程中永远不能被激活。这种现象称为死亡ReLU问题，并且也有可能会发生在其他隐藏层。</p>
+</blockquote>
+<ul>
+<li>不以零为中心：和 Sigmoid 激活函数类似，ReLU 函数的输出不以零为中心，ReLU 函数的输出为 0 或正数，给后一层的神经网络引入偏置偏移，会影响梯度下降的效率。</li>
+</ul>
+<h1 id="LReLU"><a href="#LReLU" class="headerlink" title="LReLU"></a>LReLU</h1><h1 id="PReLU"><a href="#PReLU" class="headerlink" title="PReLU"></a>PReLU</h1><h1 id="Elu"><a href="#Elu" class="headerlink" title="Elu"></a>Elu</h1><h1 id="Selu"><a href="#Selu" class="headerlink" title="Selu"></a>Selu</h1><h1 id="Gelu"><a href="#Gelu" class="headerlink" title="Gelu"></a>Gelu</h1><h1 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/427541517">详解激活函数（Sigmoid&#x2F;Tanh&#x2F;ReLU&#x2F;Leaky ReLu等） - 知乎 (zhihu.com)</a></p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/364620596">深度学习笔记：如何理解激活函数？（附常用激活函数） - 知乎 (zhihu.com)</a></p>
 
       
        <hr><span style="font-style: italic;color: gray;"> 转载请注明来源，欢迎对文章中的引用来源进行考证，欢迎指出任何有错误或不够清晰的表达。可以在下面评论区评论，也可以邮件至houjilei455@qq.com </span>
@@ -509,6 +483,46 @@ marked:
 
 
 
+    
+        <!-- MathJax配置，可通过单美元符号书写行内公式等 -->
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+    "HTML-CSS": {
+        preferredFont: "TeX",
+        availableFonts: ["STIX","TeX"],
+        linebreaks: { automatic:true },
+        EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50)
+    },
+    tex2jax: {
+        inlineMath: [ ["$", "$"], ["\\(","\\)"] ],
+        processEscapes: true,
+        ignoreClass: "tex2jax_ignore|dno",
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+        equationNumbers: { autoNumber: "AMS" },
+        noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } },
+        Macros: { href: "{}" }
+    },
+    messageStyle: "none"
+    });
+</script>
+<!-- 给MathJax元素添加has-jax class -->
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+<!-- 通过连接CDN加载MathJax的js代码 -->
+<script type="text/javascript" async
+        src="//cdn.jsdelivr.net/npm/mathjax@2.7.8/unpacked/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+<input type="hidden" id="MathJax-js"
+        value="//cdn.jsdelivr.net/npm/mathjax@2.7.8/unpacked/MathJax.js?config=TeX-MML-AM_CHTML">
+</input>
     
 
 

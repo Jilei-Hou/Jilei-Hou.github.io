@@ -388,7 +388,7 @@
     </div>
     <div class="article-meta">
         
-            Created At : <time class="date" title='Updated At: 2024-08-31 12:40:02'>2022-06-18 15:13</time>
+            Created At : <time class="date" title='Updated At: 2024-08-31 12:51:55'>2022-06-18 15:13</time>
         
     </div>
     <div class="article-meta">
@@ -428,8 +428,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>test</p>
-<h1 id="What：什么是模型量化"><a href="#What：什么是模型量化" class="headerlink" title="What：什么是模型量化"></a>What：什么是模型量化</h1><p>简单来说，<strong>模型量化（Model Quantization）就是通过某种方法将浮点模型转为定点模型</strong>。比如说原来的模型里面的权重（weight）都是float32，通过模型量化，将模型变成权重（weight）都是int8的定点模型。</p>
+        <h1 id="What：什么是模型量化"><a href="#What：什么是模型量化" class="headerlink" title="What：什么是模型量化"></a>What：什么是模型量化</h1><p>简单来说，<strong>模型量化（Model Quantization）就是通过某种方法将浮点模型转为定点模型</strong>。比如说原来的模型里面的权重（weight）都是float32，通过模型量化，将模型变成权重（weight）都是int8的定点模型。</p>
 <h1 id="Why：为什么需要模型量化"><a href="#Why：为什么需要模型量化" class="headerlink" title="Why：为什么需要模型量化"></a>Why：为什么需要模型量化</h1><p>随着深度学习（Deep Learning）的发现，其在计算机视觉（Computer Vision， CV）和自然语言处理（Natural Language Processing，NLP）等领域都取得了巨大的成功。通过深度学习，我们可以得到用于处理各种任务的高性能模型，这些模型大多都很复杂、一般只适合在GPU上进行推理，并不适合在板端进行推理，然而在实际应用时，很多场景都需要将模型部署到板端。</p>
 <p>为了解决模型难以部署到板端的问题，我们就需要通过<strong>模型量化</strong>来降低模型的复杂性，这个过程不可避免的会发生精度损失。</p>
 <p>量化前的浮点模型和量化后的定点模型的特点：</p>

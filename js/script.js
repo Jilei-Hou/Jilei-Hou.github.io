@@ -10,12 +10,12 @@ jQuery.expr[':'].containsSensitive = function (a, i, m) {
 };
 /*区分大小写，用于搜索标签过滤文章*/
 jQuery.expr[':'].contains_tag = function (a, i, m) {
-    var tags = jQuery(a).data("tag").split(",");
+    var tags = String(jQuery(a).data("tag")).split(",");
     return $.inArray(m[3], tags) !== -1;
 };
 /*区分大小写，用于搜索作者过滤文章*/
 jQuery.expr[':'].contains_author = function (a, i, m) {
-    var tags = jQuery(a).data("author").split(",");
+    var tags = String(jQuery(a).data("author")).split(",");
     return $.inArray(m[3], tags) !== -1;
 };
 var blog_path = $('.theme_blog_path').val();
@@ -109,7 +109,7 @@ $(".nav-left ul li>div").on("click", function (e) {
     $(".nav-left li>div.active").removeClass("active");
     $(this).addClass("active");
     $searchInput.val("").change();
-    var categories = $(this).data('rel').split('<--->');
+    var categories = String($(this).data('rel')).split('<--->');
     $('#default-panel > .right-title').text(categories[categories.length - 1]);
     $('#default-panel').show().siblings().hide();
     $outlineList.hide()
@@ -337,7 +337,7 @@ function inputChange() {
         $outlineList.hide();
         $('#title-list-nav').show();
     }
-    var categories = $(".nav-left ul li>div.active").data('rel').split('<--->')
+    var categories = String($(".nav-left ul li>div.active").data('rel')).split('<--->')
     // 处理特殊字符
     for (i = 0; i < categories.length; i++) {
         categories[i] =  categories[i]
@@ -670,6 +670,7 @@ function bind() {
     //初始化文章toc
     // $(".post-toc-content").html($("#post .pjax article .toc-ref .toc").clone());
     $("#outline-list").html($("#post .pjax article .toc-ref .toc").clone());
+    $("#outline-list .toc").append($("#post .pjax article .toc-ref > .toc-item").clone());
     // 修复自定义标题的关联关系
     $("#outline-list").find('.toc-link').each(function() {
         if (!$(this).attr('href')) {
@@ -797,30 +798,17 @@ function copy (text) {
     var isSuccess = false
     var target;
     if (text) {
-        target = document.createElement('div');
+        target = document.createElement('textarea');
         target.id = 'tempTarget';
         target.style.opacity = '0';
-        target.innerText = text;
+        target.value = text;
         document.body.appendChild(target);
-    } else {
-        target = document.querySelector('#' + id);
-    }
-
-    try {
-        var range = document.createRange();
-        range.selectNode(target);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-        document.execCommand('copy');
-        window.getSelection().removeAllRanges();
+        target.select();
+        document.execCommand('copy', true);
+        document.body.removeChild(target)
         isSuccess = true
-    } catch (e) {
-        console.error('复制失败')
-    }
-
-    if (text) {
-        // remove temp target
-        target.parentElement.removeChild(target);
+    } else {
+        isSuccess = false
     }
     return isSuccess
 }

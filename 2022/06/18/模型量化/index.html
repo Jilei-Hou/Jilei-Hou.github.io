@@ -6,19 +6,21 @@
   <meta name="keywords" content=" 模型量化 , PTQ , QAT ">
   <meta name="description" content="模型量化 | 455のblog">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="description" content="ConvTODO… GemmTODO… MatMulTODO…">
+<meta name="description" content="卷积作为深度学习的基础概念，入门深度学习，不可能绕过卷积。但你真的了解各种卷积吗？ 2D &#x2F; 3D &#x2F; 1x1 &#x2F;转置&#x2F;扩张（Atrous）&#x2F;空间可分&#x2F;深度可分&#x2F;平展&#x2F;分组&#x2F;混洗分组卷积 什么卷积？ 卷积的过程如上图，简单来说，卷积其实就是通过某个卷积核不断地与输入进行内积，得到输出。 其中涉及到很多其他问题">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Conv Gemm MatMul之间的联系">
-<meta property="og:url" content="http://example.com/draft/Conv_Gemm_MatMul%E4%B9%8B%E9%97%B4%E7%9A%84%E8%81%94%E7%B3%BB.html">
+<meta property="og:title" content="Conv">
+<meta property="og:url" content="http://example.com/draft/Conv.html">
 <meta property="og:site_name" content="455のblog">
-<meta property="og:description" content="ConvTODO… GemmTODO… MatMulTODO…">
+<meta property="og:description" content="卷积作为深度学习的基础概念，入门深度学习，不可能绕过卷积。但你真的了解各种卷积吗？ 2D &#x2F; 3D &#x2F; 1x1 &#x2F;转置&#x2F;扩张（Atrous）&#x2F;空间可分&#x2F;深度可分&#x2F;平展&#x2F;分组&#x2F;混洗分组卷积 什么卷积？ 卷积的过程如上图，简单来说，卷积其实就是通过某个卷积核不断地与输入进行内积，得到输出。 其中涉及到很多其他问题">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2022-06-12T06:35:00.000Z">
-<meta property="article:modified_time" content="2022-06-19T01:37:40.256Z">
+<meta property="og:image" content="http://example.com/draft/Users/HJL/Desktop/Hexo/source/img/Conv/R-C.gif">
+<meta property="article:published_time" content="2022-07-09T06:26:09.000Z">
+<meta property="article:modified_time" content="2022-07-09T07:43:18.487Z">
 <meta property="article:author" content="Jilei Hou">
 <meta property="article:tag" content="Conv">
 <meta property="article:tag" content="ONNX">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/draft/Users/HJL/Desktop/Hexo/source/img/Conv/R-C.gif">
 
 
 <link rel="icon" href="/img/IMG_1649.JPG">
@@ -334,7 +336,7 @@
     </div>
     <div class="article-meta">
         
-            发布时间 : <time class="date" title='最后更新: 2024-08-31 16:38:07'>2022-06-18 15:13</time>
+            发布时间 : <time class="date" title='最后更新: 2024-08-31 16:49:58'>2022-06-18 15:13</time>
         
     </div>
     <div class="article-meta">
@@ -358,7 +360,7 @@
     
     <div class="toc-ref">
     
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#What%EF%BC%9A%E4%BB%80%E4%B9%88%E6%98%AF%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96"><span class="toc-text">What：什么是模型量化</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Why%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96"><span class="toc-text">Why：为什么需要模型量化</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#How%EF%BC%9A%E6%80%8E%E4%B9%88%E8%BF%9B%E8%A1%8C%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96"><span class="toc-text">How：怎么进行模型量化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9D%9E%E5%AF%B9%E7%A7%B0%E9%87%8F%E5%8C%96"><span class="toc-text">非对称量化</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%BE%E4%BE%8B%EF%BC%9A"><span class="toc-text">举例：</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E7%A7%B0%E9%87%8F%E5%8C%96%EF%BC%88%E4%B8%80%E7%A7%8D%E7%89%B9%E6%AE%8A%E7%9A%84%E9%9D%9E%E5%AF%B9%E7%A7%B0%E9%87%8F%E5%8C%96%EF%BC%89"><span class="toc-text">对称量化（一种特殊的非对称量化）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#perchannel"><span class="toc-text">perchannel</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pertensor"><span class="toc-text">pertensor</span></a></li></ol></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#What%EF%BC%9A%E4%BB%80%E4%B9%88%E6%98%AF%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96"><span class="toc-text">What：什么是模型量化</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Why%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96"><span class="toc-text">Why：为什么需要模型量化</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#How%EF%BC%9A%E6%80%8E%E4%B9%88%E8%BF%9B%E8%A1%8C%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96"><span class="toc-text">How：怎么进行模型量化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9D%9E%E5%AF%B9%E7%A7%B0%E9%87%8F%E5%8C%96"><span class="toc-text">非对称量化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%AC%E5%BC%8F%EF%BC%9A"><span class="toc-text">公式：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B"><span class="toc-text">示例</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%BE%E4%BE%8B%EF%BC%9A"><span class="toc-text">举例：</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E7%A7%B0%E9%87%8F%E5%8C%96%EF%BC%88%E4%B8%80%E7%A7%8D%E7%89%B9%E6%AE%8A%E7%9A%84%E9%9D%9E%E5%AF%B9%E7%A7%B0%E9%87%8F%E5%8C%96%EF%BC%89"><span class="toc-text">对称量化（一种特殊的非对称量化）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#perchannel"><span class="toc-text">perchannel</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pertensor"><span class="toc-text">pertensor</span></a></li></ol></li></ol>
     
 <style>
     .left-col .switch-btn,
@@ -403,7 +405,9 @@
 </tr>
 </tbody></table>
 <h1 id="How：怎么进行模型量化"><a href="#How：怎么进行模型量化" class="headerlink" title="How：怎么进行模型量化"></a>How：怎么进行模型量化</h1><p>模型量化就是建立一种浮点数据和定点数据间的映射关系，使得以较小的精度损失代价获得了较大的收益，要弄懂模型量化的原理就是要弄懂这种数据映射关系。</p>
-<h2 id="非对称量化"><a href="#非对称量化" class="headerlink" title="非对称量化"></a>非对称量化</h2><p><img src="/..%5Cimg%5CModelQuantization%5Casymmetric.png" alt="非对称量化"><br>$$<br>x_q &#x3D; clamp(round(x_f&#x2F;s)+z, q_min, q_max)<br>$$</p>
+<h2 id="非对称量化"><a href="#非对称量化" class="headerlink" title="非对称量化"></a>非对称量化</h2><h3 id="公式："><a href="#公式：" class="headerlink" title="公式："></a>公式：</h3><p>$$<br>x_q &#x3D; clamp(round(x_f&#x2F;s)+z, q_{min}, q_{max})<br>$$</p>
+<p>其中，x_q表示量化后的定点数</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p><img src="/../img/ModelQuantization/asymmetric.png" alt="非对称量化"></p>
 <p>浮点和定点之间的映射公式：</p>
 <blockquote>
 <p><strong>Q &#x3D; clamp(Round(R&#x2F;S + Z)) &#x3D; Q<sub>max</sub>,                       R∈float且R&gt;T<sub>max</sub></strong></p>
@@ -488,8 +492,6 @@
 
 
 
-
-    
 
 
 

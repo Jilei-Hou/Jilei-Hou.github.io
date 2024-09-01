@@ -588,33 +588,18 @@
 .nav-left ul li>div {
   height: 40px;
   color: rgba(255,255,255,0.7);
+  transition: all 0.15s linear;
   position: relative;
   white-space: nowrap;
   overflow: hidden;
-  z-index: 1;
-}
-.nav-left ul li>div::after {
-  content: "";
-  position: absolute;
-  transition: all 0.15s linear;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 100%;
-  background: #fff;
-  z-index: -1;
 }
 .nav-left ul li>div:hover {
   color: #f7f7f7;
-}
-.nav-left ul li>div:hover:after {
-  width: 5px;
+  box-shadow: inset 6px 0 0.09px #fff;
 }
 .nav-left ul li>div.active {
   color: #020202;
-}
-.nav-left ul li>div.active:after {
-  width: 100%;
+  box-shadow: inset 165px 0 0.09px #fff;
 }
 .nav-left ul li>div>.fold {
   left: 4px;
@@ -842,7 +827,7 @@
   position: absolute;
   top: 45px;
   width: 100%;
-  padding: 0;
+  padding: 0 25px;
   box-sizing: border-box;
   height: calc(100vh - 45px);
   overflow-y: auto;
@@ -863,28 +848,32 @@
   font-weight: 400;
   position: relative;
 }
-.nav-right .title-list #outline-list .toc .toc-item,
-.nav-right .title-list #outline-list .toc .toc-level-1 {
-  margin-left: 0;
+.nav-right .title-list #outline-list .toc:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 7px;
+  bottom: 0;
+  width: 2px;
+  background-color: #ebedef;
+  opacity: 0.5;
 }
-.nav-right .title-list #outline-list .toc .toc-level-2 {
-  margin-left: 10px;
+.nav-right .title-list #outline-list .toc .toc-level-1>a,
+.nav-right .title-list #outline-list .toc .toc-level-2>a {
+  font-weight: 600;
+  color: #333;
+  margin: 6px 0;
+  padding: 4px 0 4px 21px;
 }
-.nav-right .title-list #outline-list .toc .toc-level-3 {
-  margin-left: 20px;
-}
-.nav-right .title-list #outline-list .toc .toc-level-4 {
-  margin-left: 30px;
-}
-.nav-right .title-list #outline-list .toc .toc-level-5 {
-  margin-left: 40px;
-}
-.nav-right .title-list #outline-list .toc .toc-level-6 {
-  margin-left: 50px;
+.nav-right .title-list #outline-list .toc .toc-level-1>a:before,
+.nav-right .title-list #outline-list .toc .toc-level-2>a:before {
+  left: 5px;
+  margin-top: -3px;
+  width: 6px;
+  height: 6px;
 }
 .nav-right .title-list #outline-list .toc ol {
   list-style-type: none;
-  padding: 0;
 }
 .nav-right .title-list #outline-list .toc a {
   display: block;
@@ -901,6 +890,17 @@
 .nav-right .title-list #outline-list .toc a.active {
   background-color: #ebedef;
   color: #007fff;
+}
+.nav-right .title-list #outline-list .toc a:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  margin-top: -2px;
+  width: 4px;
+  height: 4px;
+  background-color: currentColor;
+  border-radius: 50%;
 }
 .nav-right .title-list nav,
 .nav-right .title-list #local-search-result {

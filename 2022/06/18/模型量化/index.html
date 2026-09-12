@@ -27,10 +27,10 @@
 <meta property="og:description" content="What：什么是模型量化简单来说，模型量化（Model Quantization）就是通过某种方法将浮点模型转为定点模型。比如说原来的模型里面的权重（weight）都是float32，通过模型量化，将模型变成权重（weight）都是int8的定点模型。 Why：为什么需要模型量化随着深度学习（Deep Learning）的发现，其在计算机视觉（Computer Vision， CV）和自然语言处理">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-06-18T07:13:55.000Z">
-<meta property="article:modified_time" content="2026-09-12T02:00:37.179Z">
+<meta property="article:modified_time" content="2026-09-12T02:07:47.024Z">
 <meta property="article:author" content="Jilei Hou">
-<meta property="article:tag" content="模型量化">
 <meta property="article:tag" content="PTQ">
+<meta property="article:tag" content="模型量化">
 <meta property="article:tag" content="QAT">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -47,6 +47,8 @@
   <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/KaTeX/0.16.2/katex.min.css" />
 
 
 
@@ -328,7 +330,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.3k 字
+          2.6k 字
         
       </span>
     
@@ -339,7 +341,7 @@
         
         
         
-          19 分钟
+          22 分钟
         
       </span>
     
@@ -387,100 +389,94 @@
 <h1 id="Why：为什么需要模型量化"><a href="#Why：为什么需要模型量化" class="headerlink" title="Why：为什么需要模型量化"></a>Why：为什么需要模型量化</h1><p>随着深度学习（Deep Learning）的发现，其在计算机视觉（Computer Vision， CV）和自然语言处理（Natural Language Processing，NLP）等领域都取得了巨大的成功。通过深度学习，我们可以得到用于处理各种任务的高性能模型，这些模型大多都很复杂、一般只适合在GPU上进行推理，并不适合在板端进行推理，然而在实际应用时，很多场景都需要将模型部署到板端。</p>
 <p>为了解决模型难以部署到板端的问题，我们就需要通过<strong>模型量化</strong>来降低模型的复杂性，这个过程不可避免的会发生精度损失。</p>
 <p>量化前的浮点模型和量化后的定点模型的特点：</p>
-<div class="table-container">
 <table>
 <thead>
 <tr>
-<th style="text-align:center">量化前的浮点模型</th>
-<th style="text-align:center">量化后的定点模型</th>
+<th align="center">量化前的浮点模型</th>
+<th align="center">量化后的定点模型</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td style="text-align:center">参数量大（float32）</td>
-<td style="text-align:center">压缩参数（int8）</td>
+<tbody><tr>
+<td align="center">参数量大（float32）</td>
+<td align="center">压缩参数（int8）</td>
 </tr>
 <tr>
-<td style="text-align:center">计算量大</td>
-<td style="text-align:center">提升速度</td>
+<td align="center">计算量大</td>
+<td align="center">提升速度</td>
 </tr>
 <tr>
-<td style="text-align:center">内存占用多</td>
-<td style="text-align:center">内存占用少</td>
+<td align="center">内存占用多</td>
+<td align="center">内存占用少</td>
 </tr>
 <tr>
-<td style="text-align:center">精度高</td>
-<td style="text-align:center">精度损失</td>
+<td align="center">精度高</td>
+<td align="center">精度损失</td>
 </tr>
-</tbody>
-</table>
-</div>
+</tbody></table>
 <h1 id="How：怎么进行模型量化"><a href="#How：怎么进行模型量化" class="headerlink" title="How：怎么进行模型量化"></a>How：怎么进行模型量化</h1><p>模型量化就是建立一种浮点数据和定点数据间的映射关系，使得以较小的精度损失代价获得了较大的收益，要弄懂模型量化的原理就是要弄懂这种数据映射关系。</p>
 <h2 id="非对称量化"><a href="#非对称量化" class="headerlink" title="非对称量化"></a>非对称量化</h2><h3 id="公式："><a href="#公式：" class="headerlink" title="公式："></a>公式：</h3><ol>
 <li>浮点与定点互转</li>
 </ol>
-<script type="math/tex; mode=display">
-x_q = clamp(round(x_f/s)+z, q_{min}, q_{max})</script><script type="math/tex; mode=display">
-x_f = s*(x_q-z)</script><p>其中，x_q表示量化后的定点数，x_f表示原始的浮点数，s表示scale，z表示zero_point，q_min表示量化bit下的最小值，q_max表示量化bit下的最大值</p>
-<ol>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mi>q</mi></msub><mo>=</mo><mi>c</mi><mi>l</mi><mi>a</mi><mi>m</mi><mi>p</mi><mo stretchy="false">(</mo><mi>r</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>d</mi><mo stretchy="false">(</mo><msub><mi>x</mi><mi>f</mi></msub><mi mathvariant="normal">/</mi><mi>s</mi><mo stretchy="false">)</mo><mo>+</mo><mi>z</mi><mo separator="true">,</mo><msub><mi>q</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo separator="true">,</mo><msub><mi>q</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x_q = clamp(round(x_f/s)+z, q_{min}, q_{max})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">c</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">am</span><span class="mord mathnormal">p</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">d</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord">/</span><span class="mord mathnormal">s</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">min</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mi>f</mi></msub><mo>=</mo><mi>s</mi><mo>∗</mo><mo stretchy="false">(</mo><msub><mi>x</mi><mi>q</mi></msub><mo>−</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x_f = s*(x_q-z)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.4653em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mclose">)</span></span></span></span></span></p>
+<p>其中，x_q表示量化后的定点数，x_f表示原始的浮点数，s表示scale，z表示zero_point，q_min表示量化bit下的最小值，q_max表示量化bit下的最大值</p>
+<ol start="2">
 <li>scale的计算公式</li>
 </ol>
-<script type="math/tex; mode=display">
-s = (t_{max}-t_{min})/(q_{max}-q_{min})</script><p>其中t_max表示阈值最大值，t_mix表示阈值的最小值。阈值用来表示x_f中待量化的数的上下界，其选取有多种方式，如min-max，kl等</p>
-<ol>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>s</mi><mo>=</mo><mo stretchy="false">(</mo><msub><mi>t</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>−</mo><msub><mi>t</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo stretchy="false">)</mo><mi mathvariant="normal">/</mi><mo stretchy="false">(</mo><msub><mi>q</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>−</mo><msub><mi>q</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">s = (t_{max}-t_{min})/(q_{max}-q_{min})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">min</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mord">/</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">min</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span></p>
+<p>其中t_max表示阈值最大值，t_mix表示阈值的最小值。阈值用来表示x_f中待量化的数的上下界，其选取有多种方式，如min-max，kl等</p>
+<ol start="3">
 <li>zero_point的计算公式</li>
 </ol>
-<script type="math/tex; mode=display">
-z = q_{max} - t_{max}/s</script><h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>从上述的映射关系中，如果知道了阈值，那么其对应的线性映射参数也就知道了，整个量化过程也就明确了。</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>z</mi><mo>=</mo><msub><mi>q</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>−</mo><msub><mi>t</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mi mathvariant="normal">/</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">z = q_{max} - t_{max}/s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">/</span><span class="mord mathnormal">s</span></span></span></span></span></p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>从上述的映射关系中，如果知道了阈值，那么其对应的线性映射参数也就知道了，整个量化过程也就明确了。</p>
 <p>那么该如何确定阈值呢？</p>
 <p>一般来说，对于权重的量化，由于权重的数据分布是静态的，一般直接找出 MIN 和 MAX 线性映射即可；而对于推理激活值来说，其数据分布是动态的，为了得到激活值的数据分布，往往需要一个所谓校准集的东西来进行抽样分布，有了抽样分布后再通过一些量化算法进行量化阈值的选取。</p>
-<h5 id="举例："><a href="#举例：" class="headerlink" title="举例："></a>举例：</h5><p>模型训练后权重或激活值往往在一个有限的范围内分布，如权重值范围为[-2.0, 6.0]，我们选用min-max方法，即t_max = 6.0，t_min = -2.0。然后我们用int8进行模型量化，则定点量化值范围为[-128, 127]，即q_max = 127，q_min = -128，那么s和z的求值过程如下：</p>
+<h5 id="举例："><a href="#举例：" class="headerlink" title="举例："></a>举例：</h5><p>模型训练后权重或激活值往往在一个有限的范围内分布，如权重值范围为[-2.0, 6.0]，我们选用min-max方法，即t_max &#x3D; 6.0，t_min &#x3D; -2.0。然后我们用int8进行模型量化，则定点量化值范围为[-128, 127]，即q_max &#x3D; 127，q_min &#x3D; -128，那么s和z的求值过程如下：</p>
 <blockquote>
-<p>s = 6.0 - (-2.0) / (127 - (-128)) = 8.0 / 255 ≈ 0.03137255</p>
-<p>z = 127 - 6.0 / 0.03137255 ≈ 127 - 191.25 ≈ -64.25 ≈ -64</p>
+<p>s &#x3D; 6.0 - (-2.0) &#x2F; (127 - (-128)) &#x3D; 8.0 &#x2F; 255 ≈ 0.03137255</p>
+</blockquote>
+<blockquote>
+<p>z &#x3D; 127 - 6.0 &#x2F; 0.03137255 ≈ 127 - 191.25 ≈ -64.25 ≈ -64</p>
 </blockquote>
 <p>可以得到如下对应关系：</p>
-<div class="table-container">
 <table>
 <thead>
 <tr>
-<th style="text-align:center">浮点数</th>
-<th style="text-align:center">定点数</th>
+<th align="center">浮点数</th>
+<th align="center">定点数</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td style="text-align:center">6.0</td>
-<td style="text-align:center">-128</td>
+<tbody><tr>
+<td align="center">6.0</td>
+<td align="center">-128</td>
 </tr>
 <tr>
-<td style="text-align:center">0</td>
-<td style="text-align:center">-64</td>
+<td align="center">0</td>
+<td align="center">-64</td>
 </tr>
 <tr>
-<td style="text-align:center">-2.0</td>
-<td style="text-align:center">127</td>
+<td align="center">-2.0</td>
+<td align="center">127</td>
 </tr>
-</tbody>
-</table>
-</div>
-<p>得到量化参数S和Z后，我们就可以求任意一个浮点数对应的定点数，比如说有一个权重等于0.28，即R=0.28</p>
+</tbody></table>
+<p>得到量化参数S和Z后，我们就可以求任意一个浮点数对应的定点数，比如说有一个权重等于0.28，即R&#x3D;0.28</p>
 <blockquote>
-<p>q = 0.28 / 0.03137255 + (-64) ≈ -55</p>
+<p>q &#x3D; 0.28 &#x2F; 0.03137255 + (-64) ≈ -55</p>
 </blockquote>
-<h2 id="对称量化（一种特殊的非对称量化，zero-point-0）"><a href="#对称量化（一种特殊的非对称量化，zero-point-0）" class="headerlink" title="对称量化（一种特殊的非对称量化，zero_point=0）"></a>对称量化（一种特殊的非对称量化，zero_point=0）</h2><h3 id="公式"><a href="#公式" class="headerlink" title="公式"></a>公式</h3><ol>
+<h2 id="对称量化（一种特殊的非对称量化，zero-point-0）"><a href="#对称量化（一种特殊的非对称量化，zero-point-0）" class="headerlink" title="对称量化（一种特殊的非对称量化，zero_point&#x3D;0）"></a>对称量化（一种特殊的非对称量化，zero_point&#x3D;0）</h2><h3 id="公式"><a href="#公式" class="headerlink" title="公式"></a>公式</h3><ol>
 <li>浮点与定点互转</li>
 </ol>
-<script type="math/tex; mode=display">
-x_q = clamp(round(x_f/s), q_{min}, q_{max})</script><script type="math/tex; mode=display">
-x_f = s*x_q</script><p>其中，x_q表示量化后的定点数，x_f表示原始的浮点数，s表示scale，q_min表示量化bit下的最小值，q_max表示量化bit下的最大值</p>
-<ol>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mi>q</mi></msub><mo>=</mo><mi>c</mi><mi>l</mi><mi>a</mi><mi>m</mi><mi>p</mi><mo stretchy="false">(</mo><mi>r</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>d</mi><mo stretchy="false">(</mo><msub><mi>x</mi><mi>f</mi></msub><mi mathvariant="normal">/</mi><mi>s</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><msub><mi>q</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo separator="true">,</mo><msub><mi>q</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x_q = clamp(round(x_f/s), q_{min}, q_{max})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">c</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">am</span><span class="mord mathnormal">p</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">d</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord">/</span><span class="mord mathnormal">s</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">min</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mi>f</mi></msub><mo>=</mo><mi>s</mi><mo>∗</mo><msub><mi>x</mi><mi>q</mi></msub></mrow><annotation encoding="application/x-tex">x_f = s*x_q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.4653em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span></p>
+<p>其中，x_q表示量化后的定点数，x_f表示原始的浮点数，s表示scale，q_min表示量化bit下的最小值，q_max表示量化bit下的最大值</p>
+<ol start="2">
 <li>scale的计算公式</li>
 </ol>
-<script type="math/tex; mode=display">
-s = t/q_{max}</script><p>其中t表示阈值</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>s</mi><mo>=</mo><mi>t</mi><mi mathvariant="normal">/</mi><msub><mi>q</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub></mrow><annotation encoding="application/x-tex">s = t/q_{max}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">t</span><span class="mord">/</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span></p>
+<p>其中t表示阈值</p>
 <h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><p>浮点0对应的值就是定点0。对称量化对于正负数不均匀分布的情况不够友好，比如如果浮点数全部是正数，量化后的数据范围是[0, 127], [-128, 0]的范围就浪费了，减弱了int8数据的表示范围</p>
-<h2 id="perchannel"><a href="#perchannel" class="headerlink" title="perchannel"></a>perchannel</h2><h2 id="pertensor"><a href="#pertensor" class="headerlink" title="pertensor"></a>pertensor</h2><h2 id="量化方法"><a href="#量化方法" class="headerlink" title="量化方法"></a>量化方法</h2><p>从上面对两种量化算法的介绍我们不难发现，为了计算 scale 和 zero_point 我们需要知道 FP32 weight/activiation 的实际动态范围。对于推理过程来说， weights 是一个常量张量，不需要额外数据集进行采样即可确定实际的动态范围。但是 activation 的实际动态范围则必须经过采样获取(一般把这个过程称为<strong>数据校准(calibration)</strong> )。目前各个深度学习框架中，使用最多的有最大最小值(MinMax)， 滑动平均最大最小值(MovingAverageMinMax) 和 KL 距离(Kullback–Leibler divergence) 三种。如果量化过程中的每一个 FP32 数值都在这个实际动态范围内，我们一般称这种为不饱和状态；反之如果出现某些 FP32 数值不在这个实际动态范围之内我们称之为饱和状态。</p>
+<h2 id="perchannel"><a href="#perchannel" class="headerlink" title="perchannel"></a>perchannel</h2><h2 id="pertensor"><a href="#pertensor" class="headerlink" title="pertensor"></a>pertensor</h2><h2 id="量化方法"><a href="#量化方法" class="headerlink" title="量化方法"></a>量化方法</h2><p>从上面对两种量化算法的介绍我们不难发现，为了计算 scale 和 zero_point 我们需要知道 FP32 weight&#x2F;activiation 的实际动态范围。对于推理过程来说， weights 是一个常量张量，不需要额外数据集进行采样即可确定实际的动态范围。但是 activation 的实际动态范围则必须经过采样获取(一般把这个过程称为<strong>数据校准(calibration)</strong> )。目前各个深度学习框架中，使用最多的有最大最小值(MinMax)， 滑动平均最大最小值(MovingAverageMinMax) 和 KL 距离(Kullback–Leibler divergence) 三种。如果量化过程中的每一个 FP32 数值都在这个实际动态范围内，我们一般称这种为不饱和状态；反之如果出现某些 FP32 数值不在这个实际动态范围之内我们称之为饱和状态。</p>
 <h2 id="minmax"><a href="#minmax" class="headerlink" title="minmax"></a>minmax</h2><p>最简单也最直接的量化方法，直接使用tensor中的最大值来表示t_max，最小值来表示t_mix</p>
 <p>这种方式一个最大的问题时，当tensor中99%的数值都在[-100, 100]之间，有一个值为10000，那么最终选出来的t为[-100， 10000]，这会导致量化精度明显下降</p>
 <h2 id="改进的minmax"><a href="#改进的minmax" class="headerlink" title="改进的minmax"></a>改进的minmax</h2><p>在minmax的基础上进行改进，不再直接使用tensor中的最大最小值来表示t，而是通过某种方法来筛选掉离群点，</p>
@@ -517,9 +513,9 @@ s = t/q_{max}</script><p>其中t表示阈值</p>
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="print-no-link">#模型量化</a>
-      
         <a href="/tags/PTQ/" class="print-no-link">#PTQ</a>
+      
+        <a href="/tags/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="print-no-link">#模型量化</a>
       
         <a href="/tags/QAT/" class="print-no-link">#QAT</a>
       
@@ -577,6 +573,12 @@ s = t/q_{max}</script><p>其中t表示阈值</p>
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2026/09/12/SmoothQuant/" title="SmoothQuant">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">SmoothQuant</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
@@ -644,7 +646,6 @@ s = t/q_{max}</script><p>其中t表示阈值</p>
 
   
   
-
 
 
 
@@ -902,49 +903,6 @@ s = t/q_{max}</script><p>其中t表示阈值</p>
 
 
   <script>Fluid.plugins.imageCaption();</script>
-
-  
-      <script>
-        if (!window.MathJax) {
-          window.MathJax = {
-            tex    : {
-              inlineMath: { '[+]': [['$', '$']] }
-            },
-            loader : {
-              load: ['ui/lazy']
-            },
-            options: {
-              renderActions: {
-                insertedScript: [200, () => {
-                  document.querySelectorAll('mjx-container').forEach(node => {
-                    let target = node.parentNode;
-                    if (target.nodeName.toLowerCase() === 'li') {
-                      target.parentNode.classList.add('has-jax');
-                    }
-                  });
-                }, '', false]
-              }
-            }
-          };
-        } else {
-          MathJax.startup.document.state(0);
-          MathJax.texReset();
-          MathJax.typeset();
-          MathJax.typesetPromise();
-        }
-
-        Fluid.events.registerRefreshCallback(function() {
-          if ('MathJax' in window && MathJax.startup.document && typeof MathJax.startup.document.state === 'function') {
-            MathJax.startup.document.state(0);
-            MathJax.texReset();
-            MathJax.typeset();
-            MathJax.typesetPromise();
-          }
-        });
-      </script>
-    
-
-  <script  src="https://lib.baomitu.com/mathjax/3.2.2/es5/tex-mml-chtml.js" ></script>
 
   <script  src="/js/local-search.js" ></script>
 

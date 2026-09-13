@@ -1,0 +1,1090 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Jilei Hou">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="12论文：Up or Down? Adaptive Rounding for Post-Training Quantization链接：https:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2004.10568  概要过往的模型量化研究，核心点都是如何寻一个更优的 scale 值使得量化后的模型精度更高。而高通在论文《Up or Down? Adaptive Rounding for Post-Traini">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AdaRound">
+<meta property="og:url" content="https://jilei-hou.github.io/2026/09/13/AdaRound/index.html">
+<meta property="og:site_name" content="455のblog">
+<meta property="og:description" content="12论文：Up or Down? Adaptive Rounding for Post-Training Quantization链接：https:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2004.10568  概要过往的模型量化研究，核心点都是如何寻一个更优的 scale 值使得量化后的模型精度更高。而高通在论文《Up or Down? Adaptive Rounding for Post-Traini">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/1.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/2.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/3.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/4.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/5.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/6.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/7.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/8.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/9.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/10.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/11.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/12.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/13.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/14.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/15.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/16.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/17.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/18.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/19.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/20.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/21.jpg">
+<meta property="og:image" content="https://jilei-hou.github.io/img/AdaRound/22.png">
+<meta property="article:published_time" content="2026-09-13T08:08:55.000Z">
+<meta property="article:modified_time" content="2026-09-13T08:29:55.989Z">
+<meta property="article:author" content="Jilei Hou">
+<meta property="article:tag" content="量化论文">
+<meta property="article:tag" content="PTQ">
+<meta property="article:tag" content="高通">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jilei-hou.github.io/img/AdaRound/1.png">
+  
+  
+  
+  <title>AdaRound - 455のblog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/KaTeX/0.16.2/katex.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"jilei-hou.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>455のblog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="AdaRound"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-09-13 16:08" pubdate>
+          2026年9月13日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          11k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          92 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">AdaRound</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <figure class="highlight x86asm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs x86asm">论文：<span class="hljs-meta">Up</span> <span class="hljs-keyword">or</span> <span class="hljs-meta">Down</span>? Adaptive Rounding for Post-Training Quantization<br>链接：https://arxiv<span class="hljs-number">.</span>org/<span class="hljs-built_in">abs</span>/<span class="hljs-number">2004.10568</span><br></code></pre></td></tr></table></figure>
+
+<h1 id="概要"><a href="#概要" class="headerlink" title="概要"></a>概要</h1><p>过往的模型量化研究，核心点都是如何寻一个更优的 scale 值使得量化后的模型精度更高。而高通在论文《Up or Down? Adaptive Rounding for Post-Training Quantization》中提出了一种名为 AdaRound 的后量化算法，该算法的关注点不再是如何为每个 kernel &#x2F; channel &#x2F; tensor 寻找更好的 scale，而是从数学的角度分析量化过程中的 round-to-nearest 操作，并最终得出结论：看似很符合直觉的 round-to-nearest 其实并不是精度最优的。针对这个发现，作者提出 AdaRound，一种自适应的 round 后量化算法。从论文实验结果来看，针对多个 CV 模型，AdaRound 可以在不需要 QAT 或 finetune 的情况下，仅使用少量无标签的校准数据在精度上达到 SOTA，甚至 4bit 量化也可以保留较好的精度。</p>
+<p>就整篇论文的结构来看：该论文首先从数学的角度证明了在模型量化中，直接将浮点数进行四舍五入 round 到最近定点数的方法并不是精度最优的，并且通过一个简单的实验证实了这个猜想。然后作者通过一系列的数学推导和先验假设，得到了 AdaRound 算法，并通过一系列消融实验和对比实验验证了该算法的优越性。</p>
+<p>AdaRound 算法一言以蔽之：<strong>对 conv 中每个 weight 值进行量化时，不再是四舍五入的 round-to-nearest，而是自适应地决定 weight 量化时将浮点值转到最近的右定点值还是左定点值</strong>。（例如根据 round-to-nearest 规则，4.3、4.5、4.7 会分别转到定点值 4、5、5，而 AdaRound 则可能将其转换为 5、4、4 的定点值）。</p>
+<h1 id="二、背景"><a href="#二、背景" class="headerlink" title="二、背景"></a>二、背景</h1><p>量化指的是将一个范围的浮点值转换成定点值，常规的模型量化流程是：</p>
+<ol>
+<li>先根据量化算法计算 scale 值。</li>
+<li>浮点值除以 scale 后进行 round 操作。</li>
+<li>最后再按照定点取值范围进行 clip，得到量化定点值。</li>
+</ol>
+<p>而如果对量化产生的定点值再乘个 scale（该过程也被称为反量化），得到的就是伪量化值，记做 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>W</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{W}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9468em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span>（虽然又回到了浮点值，但由于量化过程中有 round 和 clip 操作，伪量化值已经不同于原始浮点值）。整个反量化过程如公式 (1) 所示：</p>
+<p><img src="/../img/AdaRound/1.png" srcset="/img/loading.gif" lazyload alt="公式(1) 反量化过程"></p>
+<p>而 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>W</mi><mo>−</mo><mover accent="true"><mi>W</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">W - \hat{W}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9468em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span> 的绝对值就是 weight 量化产生的误差。</p>
+<p>该论文的关注点是量化过程中的 round 操作，量化中最常见、最符合直觉的 round 操作是 round-to-nearest 也就是四舍五入。而作者却从数学角度证明了对于量化过程来说，round-to-nearest 并不是精度最优的：</p>
+<p><img src="/../img/AdaRound/2.jpg" srcset="/img/loading.gif" lazyload alt="公式(2)"></p>
+<p><img src="/../img/AdaRound/3.jpg" srcset="/img/loading.gif" lazyload alt="公式(3,4)"></p>
+<p>公式 (2) 中定义了模型量化前和量化后的误差对比，其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span></span></span></span> 是损失函数，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span>、<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi></mrow><annotation encoding="application/x-tex">y</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span>、<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>w</mi></mrow><annotation encoding="application/x-tex">w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span></span></span> 分别表示输入数据、输出 label 和权重 weight，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>w</mi></mrow><annotation encoding="application/x-tex">\Delta w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span></span></span> 则表示对 weight 量化过程中引入的量化误差。</p>
+<p>接下来对公式 (2) 进行二阶泰勒展开得到公式 (3, 4)。其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>g</mi><mrow><mo stretchy="false">(</mo><mi>w</mi><mo stretchy="false">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">g^{(w)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0824em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.888em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span><span class="mclose mtight">)</span></span></span></span></span></span></span></span></span></span></span></span> 表示 weight 的梯度，而 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>H</mi><mrow><mo stretchy="false">(</mo><mi>w</mi><mo stretchy="false">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">H^{(w)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.888em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.888em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span><span class="mclose mtight">)</span></span></span></span></span></span></span></span></span></span></span></span> 表示 weight 的多元二阶导也就是 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>w</mi></mrow><annotation encoding="application/x-tex">w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span></span></span> 的海森矩阵。而由于我们假设待量化模型已经训练至收敛，所以 weight 的梯度 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>g</mi><mrow><mo stretchy="false">(</mo><mi>w</mi><mo stretchy="false">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">g^{(w)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0824em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.888em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span><span class="mclose mtight">)</span></span></span></span></span></span></span></span></span></span></span></span> 是接近于 0 的极小项可以忽略。所以模型量化前后的损失也就是公式 (4)，其实就取决于损失的二阶展开项，也就是 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">\Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>H</mi></mrow><annotation encoding="application/x-tex">H</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span></span></span></span> 构成的乘项。</p>
+<p>为了更直观地表现量化前后损失的二阶泰勒展开项，作者在这里举个例子：</p>
+<p><img src="/../img/AdaRound/4.jpg" srcset="/img/loading.gif" lazyload alt="举例说明"></p>
+<p>作者假设一个 layer 只有两个权重 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">w_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">w_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>，并且海森矩阵的值如公式 (7) 中所示：</p>
+<p><img src="/../img/AdaRound/5.jpg" srcset="/img/loading.gif" lazyload alt="公式(7) 海森矩阵假设"></p>
+<p>把这个值带入到公式 (4) 中可以得到：</p>
+<p><img src="/../img/AdaRound/6.png" srcset="/img/loading.gif" lazyload alt="公式(8)"></p>
+<p>公式 (8) 即可表示在该假设下模型的量化损失。这时让我们再回到 round-to-nearest 操作上，可以发现，round-to-nearest 仅仅是在最小化 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>W</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">\Delta W_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>W</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\Delta W_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 平方的最小值，而忽略了 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>W</mi><mn>1</mn></msub><mi mathvariant="normal">Δ</mi><msub><mi>W</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\Delta W_1 \Delta W_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 对最终结果的影响。这也从另一个角度说明，对于 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span> 个 weight 值，并不是单独的每个 weight 的量化损失越少则整体损失就越小，weight 之间是存在相互影响的，并且最终影响量化损失。</p>
+<p>有了简单的理论分析，作者同样做了一个简单的试验：作者使用 stochastic rounding 方法，对一个 ResNet18 模型的第一层随机生成了 100 组不同的 rounding 方法进行 4 比特量化，并观察模型的精度变化。</p>
+<p><img src="/../img/AdaRound/7.jpg" srcset="/img/loading.gif" lazyload alt="stochastic rounding 实验"></p>
+<p>可以发现在 100 组随机生成的不同 round 方法中，有 48 组的精度要优于 round-to-nearest。其中最好的截取方法量化的模型精度甚至要比 round-to-nearest 精度高 10%。同时作为对比，作者分别将所有的 weight 进行 ceil 和 floor 的截取，最终发现这两个截取方法效果都很差。为了更直观地显示，作者也画出了模型精度与 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>H</mi><mi mathvariant="normal">Δ</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">H \Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span> 之间的关系：</p>
+<p><img src="/../img/AdaRound/8.jpg" srcset="/img/loading.gif" lazyload alt="精度与 H∆W 的关系"></p>
+<p>可以看出模型的量化精度和量化损失公式二阶泰勒展开项（公式 4）的值呈现正相关性。从这个实验可以得出这样一个结论：介于 floor 截取和 ceil 截取之间，存在着某种对权重的 round 方法，该方法可以获得比 round-to-nearest 更好的精度效果。</p>
+<h1 id="三、AdaRound-的数学推导"><a href="#三、AdaRound-的数学推导" class="headerlink" title="三、AdaRound 的数学推导"></a>三、AdaRound 的数学推导</h1><p>既然分别从数学公式推导和实验两个角度分析了存在比 round-to-nearest 更好的 round 方法，接下来需要做的就是如何找到这种 round 方法。作者首先有如下定义：</p>
+<p><img src="/../img/AdaRound/9.jpg" srcset="/img/loading.gif" lazyload alt="floor &#x2F; ceil round 定义"></p>
+<p>其中 weight floor 即表示 floor round 方法，weight ceil 的计算方法类似。<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi></mrow><annotation encoding="application/x-tex">s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">s</span></span></span></span> 表示量化用的 scale 值，而 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">\Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span> 就是浮点 weight 和伪量化 weight 之间的差值。</p>
+<p>为了方便研究，接下来的数学推导有如下假设：</p>
+<ul>
+<li>scale 值是一个固定值。</li>
+<li>对于一个 weight，其 round 方法只可能是 floor round 和 ceil round 二者中之一。</li>
+<li>只考虑同 layer 内 weight 之间的相互影响，忽略了 layer 和 layer 之间 weight 的关系。</li>
+</ul>
+<p>有了上述定义和假设，我们可以清晰地写出要优化的量化误差公式：</p>
+<p><img src="/../img/AdaRound/10.png" srcset="/img/loading.gif" lazyload alt="公式(11) 待优化量化误差"></p>
+<p>对公式 (11) 进行泰勒二阶展开：</p>
+<p><img src="/../img/AdaRound/11.jpg" srcset="/img/loading.gif" lazyload alt="公式(12) 泰勒二阶展开"></p>
+<p>忽略掉一阶展开项（模型已收敛，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>g</mi><mrow><mo stretchy="false">(</mo><mi>w</mi><mo stretchy="false">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">g^{(w)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0824em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.888em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span><span class="mclose mtight">)</span></span></span></span></span></span></span></span></span></span></span></span> 极小）：</p>
+<p><img src="/../img/AdaRound/12.png" srcset="/img/loading.gif" lazyload alt="公式(13)"></p>
+<p>最终得到公式 (13)，也就是我们要求解的公式。然而直接优化公式 (13) 几乎是不可行的：首先 weight 的海森矩阵非常巨大，求解很困难；其次公式 (13) 的求解也是一个 NP-hard 问题，无法直接求解。</p>
+<p>针对这两个问题，论文继续尝试对公式 (13) 进行简化：</p>
+<h2 id="3-1-简化-1：from-task-loss-to-local-loss"><a href="#3-1-简化-1：from-task-loss-to-local-loss" class="headerlink" title="3.1 简化 1：from task loss to local loss"></a>3.1 简化 1：from task loss to local loss</h2><p>为了便于理解，作者首先从一个简单的例子出发：假设一个模型最后输出层 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>l</mi></mrow><annotation encoding="application/x-tex">l</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span></span></span></span> 是一个只有两个 weight 的全连接，对 weight 计算二阶偏导即为：</p>
+<p><img src="/../img/AdaRound/13.png" srcset="/img/loading.gif" lazyload alt="公式(14) 二阶偏导"></p>
+<p>这里 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>z</mi><mrow><mo stretchy="false">(</mo><mi>l</mi><mo stretchy="false">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">z^{(l)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.888em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.888em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span><span class="mclose mtight">)</span></span></span></span></span></span></span></span></span></span></span></span> 表示当前层的输入也就是上一层 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>w</mi></mrow><annotation encoding="application/x-tex">w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span> 的乘积，所以我们可以计算得出第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>l</mi></mrow><annotation encoding="application/x-tex">l</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span></span></span></span> 层权重的海森矩阵即为：</p>
+<p><img src="/../img/AdaRound/14.png" srcset="/img/loading.gif" lazyload alt="公式(15) 第 l 层海森矩阵"></p>
+<p>从这个公式中不难看出，计算第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span></span></span></span> 层 weight 的海森矩阵，需要借助第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">L-1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">L</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span> 层的二阶导信息，也正是这个原因导致直接计算每一层的海森矩阵是极其困难的。所以为了继续求解最小量化误差，需要对海森矩阵的计算进行进一步的简化：</p>
+<p><img src="/../img/AdaRound/15.png" srcset="/img/loading.gif" lazyload alt="公式(16,17) 海森矩阵简化"></p>
+<p>将公式 (16) 推导到公式 (17)，作者引入了一个比较强的假设：假设公式 (16) 中关于 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">L-1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">L</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span> 层（也就是 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>z</mi><mrow><mo stretchy="false">(</mo><mi>L</mi><mo stretchy="false">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">z^{(L)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.888em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.888em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight">L</span><span class="mclose mtight">)</span></span></span></span></span></span></span></span></span></span></span></span>）的海森矩阵是一个对角矩阵，也就是 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">L-1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">L</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span> 层的 weights 之间的相互关联对第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span></span></span></span> 层 weights 的海森矩阵求导是不相关的。</p>
+<p>然后再将公式 (17) 带入到公式 (13) 中，得到公式 (18)：</p>
+<p><img src="/../img/AdaRound/16.png" srcset="/img/loading.gif" lazyload alt="公式(18)"></p>
+<p>而从公式 (18) 到公式 (19) 也用了一个很强的先验假设，即对于第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span></span></span></span> 层来说：</p>
+<p><img src="/../img/AdaRound/17.jpg" srcset="/img/loading.gif" lazyload alt="公式(19) 先验假设"></p>
+<p>也就是说，作者假设在对第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span></span></span></span> 层计算量化损失时，认为第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">L-1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">L</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span> 层对 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span></span></span></span> 层的量化损失影响是一个不依赖于校准数据集输入的常量，所以在公式 (18) 中可以直接省略。（论文的实验中证明了该假设对最终结果的影响很小。）</p>
+<p>于是通过多个假设，我们要求解的公式就从公式 (13) 简化成了公式 (20)。观察公式 (20)，可以发现此时待求解公式变成了一个每个 layer 独立的、不依赖于其它 layer 和 task loss 的求解公式。问题变成了找到可以使 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>W</mi><mi>X</mi></mrow><annotation encoding="application/x-tex">\Delta W X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span></span></span></span> 的 MSE loss 值最小的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">\Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span>。</p>
+<h2 id="3-2-NP-hard-问题简化"><a href="#3-2-NP-hard-问题简化" class="headerlink" title="3.2 NP-hard 问题简化"></a>3.2 NP-hard 问题简化</h2><p>为了求解 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">\Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span>，我们还需要对公式 (20) 进行简化，得到下面的一组公式：</p>
+<p><img src="/../img/AdaRound/18.png" srcset="/img/loading.gif" lazyload alt="公式(21)"></p>
+<p><img src="/../img/AdaRound/19.png" srcset="/img/loading.gif" lazyload alt="公式(22,23)"></p>
+<p><img src="/../img/AdaRound/20.png" srcset="/img/loading.gif" lazyload alt="公式(24)"></p>
+<p>这四个公式是 AdaRound 的核心计算公式，下面对这四个公式进行逐一解释：</p>
+<ul>
+<li><strong>公式 (21)</strong> 相当于将公式 (20) 中的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">\Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span> 展开并忽略 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span> 的影响（因为对于公式 20 来说 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span> 是定值，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span> 的改变并不会影响公式 20 的结果），同时引入了可微正则项 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mrow><mi>r</mi><mi>e</mi><mi>g</mi></mrow></msub><mo stretchy="false">(</mo><mi>V</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f_{reg}(V)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span></span></span></span>，用以约束 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><msub><mi>V</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V_{ij})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> 向 0 和 1 两个值收敛。<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">V</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span></span></span></span> 是什么后面解释。</li>
+<li><strong>公式 (22)</strong> 即为反量化 weight 的计算方式，可以发现其值是原始浮点值除 scale 后进行 round-to-floor 然后加上一个 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><mi>V</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span></span></span></span>，再进行截取和反量化。也就是说，对于任意一个权重 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>W</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow><annotation encoding="application/x-tex">W_{ij}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>，需要找到一个 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow><annotation encoding="application/x-tex">V_{ij}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> 值帮助我们完成量化。</li>
+<li><strong>公式 (23)</strong> 是 rectified sigmoid 函数，也就是作者选择的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><mi>V</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span></span></span></span> 函数，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><mi>V</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span></span></span></span> 函数理论上可以是任意一个可导的并且输出值域在 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">[</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span></span> 之间的函数（比如说 sigmoid）。rectified sigmoid 函数中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ζ</mi></mrow><annotation encoding="application/x-tex">\zeta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0738em;">ζ</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi></mrow><annotation encoding="application/x-tex">\gamma</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span></span></span></span> 是伸缩参数，分别取值为 1.1 和 −0.1。</li>
+<li><strong>公式 (24)</strong> 为作者定义的正则项 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mrow><mi>r</mi><mi>e</mi><mi>g</mi></mrow></msub><mo stretchy="false">(</mo><mi>V</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f_{reg}(V)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span></span></span></span>，用以约束 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">V</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span></span></span></span> 的收敛方向。<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mrow><mi>r</mi><mi>e</mi><mi>g</mi></mrow></msub><mo stretchy="false">(</mo><mi>V</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f_{reg}(V)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span></span></span></span> 中引入了正整数参数 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span>，作为退火参数。在 AdaRound 运行的初始阶段，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span> 用较大值可以帮助公式 (21) 更快收敛，而到了运行后期，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span> 会使用一个较小的正整数，使得 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><msub><mi>V</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V_{ij})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> 逼近 0 或 1。</li>
+</ul>
+<p>下图展示了优化前和优化后 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><msub><mi>V</mi><mrow><mi>i</mi><mo separator="true">,</mo><mi>j</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V_{i,j})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> 之间的对应关系，可以发现所有 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><msub><mi>V</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V_{ij})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> 都已收敛到 0 或 1 两个值上，而图中的虚线则是 round-to-nearest 的量化截取方法得到的效果（两条垂直虚线分成的四个格子中，右上的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><msub><mi>V</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V_{ij})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> 应该被量化到 1，左下的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false">(</mo><msub><mi>V</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">h(V_{ij})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> 应该被量化到 0）。可以看到 AdaRound 对不同值的量化选择和 round-to-nearest 是不相同的。</p>
+<p><img src="/../img/AdaRound/21.jpg" srcset="/img/loading.gif" lazyload alt="h(Vij) 收敛关系"></p>
+<h1 id="四、AdaRound"><a href="#四、AdaRound" class="headerlink" title="四、AdaRound"></a>四、AdaRound</h1><p>至此我们得到了公式 (21~24) 一组公式，就可以一层一层地对 weight 进行优化。然而公式 (21) 存在一个缺陷：无法避免量化误差的不断累积，也没有考虑到激活函数，所以作者对公式 (21) 进行进一步的优化：</p>
+<p><img src="/../img/AdaRound/22.png" srcset="/img/loading.gif" lazyload alt="公式(25) AdaRound 最终表达式"></p>
+<p>其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mi>a</mi></msub><mo stretchy="false">(</mo><mo>⋅</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f_a(\cdot)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord">⋅</span><span class="mclose">)</span></span></span></span> 为激活函数，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>x</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{x}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">x</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.2222em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span> 为当前层的反量化输入，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span> 为当前层的浮点输入。也就是将对 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>W</mi></mrow><annotation encoding="application/x-tex">\Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span> 的优化转换为对 conv 计算后结果的优化。</p>
+<p>公式 (25) 即为 AdaRound 的最终表达式，我们可以直接使用梯度下降算法进行求解。</p>
+<h1 id="五、AIMET-中的-AdaRound-工程实现"><a href="#五、AIMET-中的-AdaRound-工程实现" class="headerlink" title="五、AIMET 中的 AdaRound 工程实现"></a>五、AIMET 中的 AdaRound 工程实现</h1><blockquote>
+<p>✅ <strong>推荐场景：</strong> AdaRound 能把难量化模型恢复到接近 FP32 的水平，甚至支持把权重压到 INT4。以下以高通开源量化工具 AIMET 的 ONNX 实现为例，梳理其工程落地方式。</p>
+</blockquote>
+<p>AIMET 的 <code>aimet_onnx.apply_adaround</code> 会<strong>冻结量化范围（delta &#x2F; offset）</strong>（delta 就是 scale，offset 就是 zero point），<strong>只把「每个权重向上还是向下取整」变成一个可学习参数 alpha</strong>，再逐层跑上万步梯度下降学出最优取整方向。核心分四步：</p>
+<ol>
+<li><strong>参数化取整</strong>：用 <code>floor + h_alpha</code> 代替 round。<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mi mathvariant="normal">_</mi><mi>a</mi><mi>l</mi><mi>p</mi><mi>h</mi><mi>a</mi><mo>∈</mo><mo stretchy="false">[</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">h\_alpha \in [0,1]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0044em;vertical-align:-0.31em;"></span><span class="mord mathnormal">h</span><span class="mord" style="margin-right:0.0278em;">_</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">p</span><span class="mord mathnormal">ha</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span></span>，0 &#x3D; 向下取整、1 &#x3D; 向上取整，中间是可微软插值，因而能对 alpha 求梯度。</li>
+<li><strong>rectified sigmoid</strong>：把 alpha 映射到略超出 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">[</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">[0,1]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span></span> 再截断（GAMMA&#x3D;−0.1、ZETA&#x3D;1.1），使 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mi mathvariant="normal">_</mi><mi>a</mi><mi>l</mi><mi>p</mi><mi>h</mi><mi>a</mi></mrow><annotation encoding="application/x-tex">h\_alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0044em;vertical-align:-0.31em;"></span><span class="mord mathnormal">h</span><span class="mord" style="margin-right:0.0278em;">_</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">p</span><span class="mord mathnormal">ha</span></span></span></span> 能真正取到 0 和 1 两端，而普通 sigmoid 到不了端点。</li>
+<li><strong>alpha 初始化</strong>：反解出让初始 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mi mathvariant="normal">_</mi><mi>a</mi><mi>l</mi><mi>p</mi><mi>h</mi><mi>a</mi></mrow><annotation encoding="application/x-tex">h\_alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0044em;vertical-align:-0.31em;"></span><span class="mord mathnormal">h</span><span class="mord" style="margin-right:0.0278em;">_</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">p</span><span class="mord mathnormal">ha</span></span></span></span> 恰好等于权重小数部分的 alpha，保证学习起点等价于就近取整，只学「偏离量」。</li>
+<li><strong>逐层顺序优化</strong>：按计算图 <code>ordered_ops</code> 顺序逐层处理，共享权重节点跳过；每层收敛后冻结其权重 encodings。</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># 1. 权重除以步长 delta 后向下取整（floor，不是 round）</span><br>tensor = torch.floor(tensor / delta)<br><br><span class="hljs-comment"># 2. rectified sigmoid 把 alpha 映射到 [0,1] 的软取整量 h_alpha</span><br><span class="hljs-keyword">if</span> use_soft_rounding:<br>    h_alpha = torch.clamp(<br>        torch.sigmoid(alpha) * (ZETA - GAMMA) + GAMMA,  <span class="hljs-comment"># GAMMA=-0.1, ZETA=1.1</span><br>        <span class="hljs-number">0</span>, <span class="hljs-number">1</span>)<br><span class="hljs-keyword">else</span>:<br>    h_alpha = (alpha &gt;= <span class="hljs-number">0</span>).to(tensor.dtype)   <span class="hljs-comment"># 硬取整：非 0 即 1</span><br><br><span class="hljs-comment"># 3. floor + h_alpha = 在 floor 与 ceil 之间做可微插值</span><br>tensor = tensor + h_alpha<br><br><span class="hljs-comment"># 4. clamp 到量化范围后反量化</span><br>tensor_quant   = torch.clamp(tensor - offset, <span class="hljs-number">0</span>, <span class="hljs-number">2</span> ** bitwidth - <span class="hljs-number">1</span>)<br>tensor_dequant = (tensor_quant + offset) * delta<br></code></pre></td></tr></table></figure>
+
+<p><strong>目标函数 &#x3D; 重建损失 + 取整正则</strong>（<code>adaround_loss.py</code>）。重建损失让量化层输出贴近原始 FP32 层输出（需校准数据采集每层真实输入激活）；取整正则把 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mi mathvariant="normal">_</mi><mi>a</mi><mi>l</mi><mi>p</mi><mi>h</mi><mi>a</mi></mrow><annotation encoding="application/x-tex">h\_alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0044em;vertical-align:-0.31em;"></span><span class="mord mathnormal">h</span><span class="mord" style="margin-right:0.0278em;">_</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">p</span><span class="mord mathnormal">ha</span></span></span></span> 推向 0 &#x2F; 1，避免停在 0.5 的模糊地带。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># 重建损失：量化层输出 vs 原始 FP32 层输出（Frobenius 范数平方）</span><br>recon_loss = (torch.norm(ada_out - orig_out, p=<span class="hljs-string">&quot;fro&quot;</span>, dim=<span class="hljs-number">1</span>) ** <span class="hljs-number">2</span>).mean()<br><br><span class="hljs-comment"># 取整正则：前 20% 迭代 warm start 不加正则</span><br><span class="hljs-keyword">if</span> cur_iter &lt; num_iterations * <span class="hljs-number">0.2</span>:            <span class="hljs-comment"># _WARM_START = 0.2</span><br>    round_loss = <span class="hljs-number">0</span><br><span class="hljs-keyword">else</span>:<br>    beta = _compute_beta(cur_iter, num_iterations)   <span class="hljs-comment"># 余弦退火 (20 -&gt; 2)</span><br>    reg  = (<span class="hljs-number">1</span> - (<span class="hljs-number">2</span> * h_alpha - <span class="hljs-number">1</span>).<span class="hljs-built_in">abs</span>().<span class="hljs-built_in">pow</span>(beta)).<span class="hljs-built_in">sum</span>()<br>    round_loss = <span class="hljs-number">0.01</span> * reg                    <span class="hljs-comment"># _REG_PARAM = 0.01</span><br></code></pre></td></tr></table></figure>
+
+<p>迭代过程按<strong>退火调度</strong>分两阶段：</p>
+<table>
+<thead>
+<tr>
+<th align="left">阶段</th>
+<th align="left">迭代区间</th>
+<th align="left">行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Warm start</td>
+<td align="left">前 20%</td>
+<td align="left">只有重建损失，取整正则&#x3D;0；alpha 自由探索，先把层输出误差降下来</td>
+</tr>
+<tr>
+<td align="left">退火收敛</td>
+<td align="left">后 80%</td>
+<td align="left">加入取整正则，beta 按余弦调度让正则曲线越来越尖，把每个 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mi mathvariant="normal">_</mi><mi>a</mi><mi>l</mi><mi>p</mi><mi>h</mi><mi>a</mi></mrow><annotation encoding="application/x-tex">h\_alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0044em;vertical-align:-0.31em;"></span><span class="mord mathnormal">h</span><span class="mord" style="margin-right:0.0278em;">_</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">p</span><span class="mord mathnormal">ha</span></span></span></span> 逼向 0 或 1</td>
+</tr>
+</tbody></table>
+<h2 id="关键疑问：ONNX-模型不可导，怎么迭代-h-alpha？"><a href="#关键疑问：ONNX-模型不可导，怎么迭代-h-alpha？" class="headerlink" title="关键疑问：ONNX 模型不可导，怎么迭代 h_alpha？"></a>关键疑问：ONNX 模型不可导，怎么迭代 h_alpha？</h2><p>onnxruntime 是纯推理引擎、不做反向传播，那 alpha 的梯度从哪来？答案是：<strong>AdaRound 的反向传播根本不在 onnxruntime 里，而是搬到 PyTorch 上做</strong>。一个 ONNX 量化库的优化器文件（<code>adaround_optimizer.py</code>）顶部却 import 了 torch，正是这个原因：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">import</span> onnx<br><span class="hljs-keyword">import</span> torch<br><span class="hljs-keyword">from</span> torch.nn <span class="hljs-keyword">import</span> functional          <span class="hljs-comment"># 用 PyTorch 重建单层前向</span><br><span class="hljs-keyword">from</span> aimet_onnx.adaround.activation_sampler <span class="hljs-keyword">import</span> ActivationSampler<br></code></pre></td></tr></table></figure>
+
+<p>它把职责拆开，onnxruntime 只负责「取数据」，PyTorch 负责「算梯度」：</p>
+<table>
+<thead>
+<tr>
+<th align="left">职责</th>
+<th align="left">由谁完成</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">提供该层的输入激活、FP32 参考输出</td>
+<td align="left">onnxruntime（前向，无梯度）</td>
+</tr>
+<tr>
+<td align="left">用该层运算重建前向（conv &#x2F; linear &#x2F; matmul）</td>
+<td align="left">PyTorch functional（可微）</td>
+</tr>
+<tr>
+<td align="left">对 alpha 反向传播、Adam 更新</td>
+<td align="left">PyTorch autograd + optimizer</td>
+</tr>
+<tr>
+<td align="left">优化完成后把学到的取整写回权重</td>
+<td align="left">更新 ONNX 模型 weight 张量</td>
+</tr>
+</tbody></table>
+<h2 id="数据从哪来：双-session、两种激活"><a href="#数据从哪来：双-session、两种激活" class="headerlink" title="数据从哪来：双 session、两种激活"></a>数据从哪来：双 session、两种激活</h2><p>onnxruntime 用校准数据前向时，取的不是模型最终输出，而是<strong>某一层的中间激活</strong>；而且 <code>ActivationSampler</code> 会同时建<strong>两个 session</strong>，从两个模型各取一种激活：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># fp32 模型的 session —— 取该层的 FP32 输出（干净的&quot;标准答案&quot;）</span><br><span class="hljs-variable language_">self</span>.fp32_sess = <span class="hljs-variable language_">self</span>.create_session(<span class="hljs-variable language_">self</span>._fp32_model, <span class="hljs-variable language_">self</span>._fp_act_name)<br><span class="hljs-comment"># 量化 sim 模型的 session —— 取该层的量化输入（带前面各层量化误差）</span><br><span class="hljs-variable language_">self</span>.qsim_sess = <span class="hljs-variable language_">self</span>.create_session(<span class="hljs-variable language_">self</span>._quant_sim.model.model, <span class="hljs-variable language_">self</span>._quant_act_name)<br><br><span class="hljs-comment"># 单独抠出指定中间张量（而非整模型输出）</span><br>act_output = session.run([activation_name], model_inputs)[<span class="hljs-number">0</span>]<br></code></pre></td></tr></table></figure>
+
+<p>这两种激活在 PyTorch 反向传播里扮演不同角色：</p>
+<table>
+<thead>
+<tr>
+<th align="left">取什么</th>
+<th align="left">来自哪个模型</th>
+<th align="left">在反向传播里当什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">该层输入激活</td>
+<td align="left">量化 sim 模型</td>
+<td align="left">前向输入 x（喂给 PyTorch 重建的 conv &#x2F; linear）</td>
+</tr>
+<tr>
+<td align="left">该层 FP32 输出激活</td>
+<td align="left">FP32 原始模型</td>
+<td align="left">重建损失的 target y（干净的标准答案）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>💡 <strong>说明：</strong> 输入 x 取自<strong>量化模型</strong>（已带前面各层的量化误差），输出参考 y 取自<strong>FP32 模型</strong>（干净）。于是优化目标变成「在带误差的量化输入下，让本层输出尽量逼近 FP32 干净输出」——本层顺便补偿前面层累积的误差。这也是 AdaRound 必须<strong>严格按层先后顺序</strong>逐个处理的原因：前面层定下来后，后面层采到的输入激活才准确。</p>
+</blockquote>
+<p>逐层（per-layer）优化，因此每层只需在 PyTorch 里重建「单个算子」的前向，无需整个 ONNX 图可导。核心循环如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># 1. onnxruntime 采集该层输入激活 + FP32 参考输出（仅前向）</span><br>act_sampler = ActivationSampler(module.outputs[<span class="hljs-number">0</span>], quantized_input_name,<br>                                quant_model, fp32_model)<br>inp_data, out_data = act_sampler.sample_acts(...)   <span class="hljs-comment"># 内部即 session.run(...)</span><br><br><span class="hljs-comment"># 2. 权重/激活转成 torch，alpha 是可训练参数，用 PyTorch Adam</span><br>weights = torch.from_numpy(numpy_helper.to_array(module.params[<span class="hljs-string">&quot;weight&quot;</span>].tensor))<br>adaround_quantizer.initialize_alpha(weights)          <span class="hljs-comment"># alpha = nn.Parameter</span><br>optimizer = torch.optim.Adam([adaround_quantizer.alpha])<br><br><span class="hljs-keyword">for</span> iteration <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(num_iterations):<br>    optimizer.zero_grad()<br>    <span class="hljs-comment"># 3. 用 AdaRound 权重(floor+h_alpha)在 PyTorch 里重算该层输出——天然带梯度</span><br>    <span class="hljs-comment">#    out = functional.conv2d / conv_transpose2d / linear / torch.matmul(...)</span><br>    <span class="hljs-comment"># 4. total_loss = 重建损失(重算输出 vs onnx采的FP32输出) + 取整正则</span><br>    total_loss.backward()     <span class="hljs-comment"># ← 反向传播在 PyTorch autograd 图里，对 alpha 求梯度</span><br>    optimizer.step()          <span class="hljs-comment"># ← 更新 alpha</span><br></code></pre></td></tr></table></figure>
+
+<blockquote>
+<p>💡 <strong>说明：</strong> 因为 <code>adarounded_weights = floor(w/delta) + h_alpha</code>、而 h_alpha 是 alpha 经 rectified sigmoid 的可微函数，整条链路（alpha → h_alpha → 权重 → functional.conv2d 输出 → loss）都在 PyTorch autograd 图内，与 onnxruntime 完全无关。所以「在 ONNX 上迭代 h_alpha」要打引号：真正被优化的是 PyTorch 里的 alpha，ONNX 模型只在两端出现——开头提供权重与激活、结尾接收取整后的定点权重。</p>
+</blockquote>
+<h2 id="编排逻辑"><a href="#编排逻辑" class="headerlink" title="编排逻辑"></a>编排逻辑</h2><p>ONNX 主入口 <code>apply_adaround</code>（<code>adaround_weight.py</code>）把「逐层学取整」串起来，关键编排步骤如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">apply_adaround</span>(<span class="hljs-params">sim, inputs, num_iterations=<span class="hljs-number">10000</span>, nodes_to_include=<span class="hljs-literal">None</span></span>):<br>    <span class="hljs-comment"># 1. 先算好各权重的量化范围 encodings（AdaRound 只学取整，不改范围）</span><br>    sim._compute_param_encodings(overwrite=<span class="hljs-literal">False</span>)<br><br>    <span class="hljs-comment"># 2. 复制一份去掉量化器的 FP32 模型，作为逐层输出的&quot;标准答案&quot;</span><br>    fp32_model = QuantizationSimModel.remove_quantizers(deepcopy(sim.model.model))<br><br>    <span class="hljs-comment"># 3. 关闭激活量化，专注学权重取整</span><br>    <span class="hljs-keyword">with</span> utils.disable_quantizers(sim, <span class="hljs-built_in">set</span>(sim.activation_names)):<br>        cached_dataset = utils.CachedDataset(inputs, <span class="hljs-built_in">len</span>(inputs), tmp_dir)<br>        <span class="hljs-comment"># 4. 按计算图出现顺序逐层 AdaRound，共享权重的层跳过</span><br>        <span class="hljs-keyword">for</span> module <span class="hljs-keyword">in</span> tqdm(sim.connected_graph.ordered_ops):<br>            <span class="hljs-keyword">if</span> nodes_to_include <span class="hljs-keyword">and</span> module.name <span class="hljs-keyword">not</span> <span class="hljs-keyword">in</span> nodes_to_include:<br>                <span class="hljs-keyword">continue</span><br>            <span class="hljs-comment"># 每层：采集输入激活 -&gt; 优化 alpha -&gt; 冻结该层权重 encodings</span><br>            ...<br></code></pre></td></tr></table></figure>
+
+<h2 id="ONNX-代码用法"><a href="#ONNX-代码用法" class="headerlink" title="ONNX 代码用法"></a>ONNX 代码用法</h2><p>官方推荐先用 onnx-simplifier 化简模型，再走「建 sim → apply_adaround → compute_encodings → export」四步：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">import</span> onnx, onnxsim, onnxruntime <span class="hljs-keyword">as</span> ort<br><span class="hljs-keyword">import</span> aimet_onnx<br><span class="hljs-keyword">from</span> aimet_onnx.common.defs <span class="hljs-keyword">import</span> QuantScheme<br><span class="hljs-keyword">from</span> aimet_onnx.quantsim <span class="hljs-keyword">import</span> QuantizationSimModel<br><br><span class="hljs-comment"># 建议：adaround 前先用 onnx-simplifier 化简</span><br>model = onnx.load_model(file_path)<br>model, _ = onnxsim.simplify(model)<br><br><span class="hljs-comment"># 无标签校准数据：list[&#123;input_name: np.ndarray&#125;]</span><br>input_name = model.graph.<span class="hljs-built_in">input</span>[<span class="hljs-number">0</span>].name<br>onnx_data = [&#123;input_name: data.numpy()&#125;<br>             <span class="hljs-keyword">for</span> data, _ <span class="hljs-keyword">in</span> itertools.islice(dataloader, num_batches)]<br><br><span class="hljs-comment"># Step 1: 建 sim 并应用 AdaRound</span><br>sim = QuantizationSimModel(model,<br>                           quant_scheme=QuantScheme.min_max,<br>                           param_type=aimet_onnx.int4,<br>                           activation_type=aimet_onnx.int8,<br>                           providers=providers)<br>aimet_onnx.apply_adaround(sim, onnx_data, num_iterations=<span class="hljs-number">15000</span>)<br><br><span class="hljs-comment"># Step 2: 计算激活 encodings（权重 encodings 已被 AdaRound 冻结）</span><br>sim.compute_encodings(onnx_data)<br><br><span class="hljs-comment"># Step 3/4: 用 sim.session 评估后，导出量化模型 + encodings</span><br>sim.export(path=<span class="hljs-string">&quot;/tmp&quot;</span>, filename_prefix=<span class="hljs-string">&quot;quantized_mobilenet_v2&quot;</span>)<br></code></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>sim</code></td>
+<td align="left">要优化的 QuantizationSimModel 实例</td>
+</tr>
+<tr>
+<td align="left"><code>inputs</code></td>
+<td align="left">无标签校准数据，格式 <code>[&#123;input_name: np.ndarray&#125;, ...]</code></td>
+</tr>
+<tr>
+<td align="left"><code>num_iterations</code></td>
+<td align="left">每层优化步数；权重 ≥8bit 建议 10K，&lt;8bit（如 INT4）建议 15K</td>
+</tr>
+<tr>
+<td align="left"><code>nodes_to_include</code></td>
+<td align="left">只优化指定节点名；None 表示所有受支持节点</td>
+</tr>
+</tbody></table>
+<h1 id="六、实测效果"><a href="#六、实测效果" class="headerlink" title="六、实测效果"></a>六、实测效果</h1><p>对于难以量化到 INT8 的 ADAS 目标检测模型，AdaRound 可把精度恢复到 FP32 的 1% 以内；对 DeepLabv3 甚至能把权重量化到 INT4 仍无明显下降。</p>
+<table>
+<thead>
+<tr>
+<th align="left">配置（ADAS 目标检测 &#x2F; mAP）</th>
+<th align="left">精度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">FP32</td>
+<td align="left">82.20%</td>
+</tr>
+<tr>
+<td align="left">就近舍入 (INT8 权重, INT8 激活)</td>
+<td align="left">49.85%（↓32.35）</td>
+</tr>
+<tr>
+<td align="left">AdaRound (INT8 权重, INT8 激活)</td>
+<td align="left">81.21%（↓0.99）</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th align="left">配置（DeepLabv3 语义分割 &#x2F; mIOU）</th>
+<th align="left">精度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">FP32</td>
+<td align="left">72.94%</td>
+</tr>
+<tr>
+<td align="left">就近舍入 (INT4 权重, INT8 激活)</td>
+<td align="left">6.09%（↓66.85）</td>
+</tr>
+<tr>
+<td align="left">AdaRound (INT4 权重, INT8 激活)</td>
+<td align="left">70.86%（↓2.08）</td>
+</tr>
+</tbody></table>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="category-chain-item">模型量化</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%87%8F%E5%8C%96%E8%AE%BA%E6%96%87/" class="print-no-link">#量化论文</a>
+      
+        <a href="/tags/PTQ/" class="print-no-link">#PTQ</a>
+      
+        <a href="/tags/%E9%AB%98%E9%80%9A/" class="print-no-link">#高通</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>AdaRound</div>
+      <div>https://jilei-hou.github.io/2026/09/13/AdaRound/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Jilei Hou</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年9月13日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/09/13/AWQ/" title="AWQ">
+                        <span class="hidden-mobile">AWQ</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

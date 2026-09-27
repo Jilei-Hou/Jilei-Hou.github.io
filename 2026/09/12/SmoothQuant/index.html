@@ -30,7 +30,7 @@
 <meta property="og:image" content="https://jilei-hou.github.io/img/SmoothQuant/1.png">
 <meta property="og:image" content="https://jilei-hou.github.io/img/SmoothQuant/2.png">
 <meta property="article:published_time" content="2026-09-12T03:41:55.000Z">
-<meta property="article:modified_time" content="2026-09-13T05:34:38.474Z">
+<meta property="article:modified_time" content="2026-09-27T04:29:44.768Z">
 <meta property="article:author" content="Jilei Hou">
 <meta property="article:tag" content="量化论文">
 <meta property="article:tag" content="PTQ">
@@ -394,13 +394,13 @@
 <p>作者观察发现LLM中featuremap的极值存在于特定维度的channel中，这些outlier值使得量化困难。</p>
 <p><img src="/../img/SmoothQuant/SmoothQuant.PNG" srcset="/img/loading.gif" lazyload alt="SmoothQuant"></p>
 <h1 id="核心思想：难度迁移"><a href="#核心思想：难度迁移" class="headerlink" title="核心思想：难度迁移"></a>核心思想：难度迁移</h1><p>既然<strong>逐通道（per-channel）量化激活</strong>能恢复精度、却无法对接 INT8 GEMM 内核（缩放只能在矩阵乘的外维度做），SmoothQuant 换了个思路：<strong>不去per-channel量化激活，而是把激活的量化难度「搬」到权重上</strong>。</p>
-<p><strong>关键观察：<strong>激活虽因离群值难量化，但</strong>不同 token 在各通道上的变化模式是相似的</strong>——离群值固定在特定通道。于是可以对这些通道整体「削峰」，把幅度差异转移给本就平坦、好量化的权重。</p>
+<p><strong>关键观察</strong>：激活虽因离群值难量化，但<strong>不同 token 在各通道上的变化模式是相似的</strong>——离群值固定在特定通道。于是可以对这些通道整体「削峰」，把幅度差异转移给本就平坦、好量化的权重。</p>
 <p>具体做法：对激活的指定通道乘上一个<strong>小于 1 的缩放因子</strong>把峰值压下去，同时对应的权重通道乘上该因子的<strong>倒数</strong>，使线性层的计算结果<strong>数学上完全等价</strong>。变换后：</p>
 <ul>
 <li>激活 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>X</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{X}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9468em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span>：离群值被「抹平」，量化范围变紧，有效比特数提升。</li>
 <li>权重 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>W</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{W}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9468em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span>：虽然略微变难，但因原本足够平坦，仍在易量化范围内。</li>
 </ul>
-<p><strong>工程友好点：<strong>激活通常由前一层（线性层、LayerNorm 等）产生，因此平滑因子可以</strong>离线融合进前一层的参数</strong>，运行时不引入任何额外的缩放算子，<strong>零额外开销</strong>。</p>
+<p><strong>工程友好点</strong>：激活通常由前一层（线性层、LayerNorm 等）产生，因此平滑因子可以<strong>离线融合进前一层的参数</strong>，运行时不引入任何额外的缩放算子，<strong>零额外开销</strong>。</p>
 <p><img src="/../img/SmoothQuant/1.png" srcset="/img/loading.gif" lazyload alt="强度迁移"></p>
 <h2 id="以ααα-0-5为例"><a href="#以ααα-0-5为例" class="headerlink" title="以ααα&#x3D;0.5为例"></a>以<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">α</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span>&#x3D;0.5为例</h2><ol>
 <li><p>校准过程（离线） </p>

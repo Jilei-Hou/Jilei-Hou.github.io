@@ -716,14 +716,14 @@
       <h2 class="index-header">
         
         <a href="/2026/09/13/AWQ/" target="_self">
-          AWQ
+          AWQ：面向端侧 LLM 压缩与加速的激活感知权重量化
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2026/09/13/AWQ/" target="_self">
         <div>
-          背景123论文：https://arxiv.org/pdf/2306.00978代码：https://github.com/mit-han-lab/llm-awqSmoothQuant主要适用于W4A16的场景  算法原理LLM 的性能高度依赖极少数的关键权重，可以通过权重对应激活值大小来识别关键权重，当激活值很大时，权重微小的量化误差都会被巨大的输入放大，从而导致输出结果的剧烈波动。 权重缩放
+          💡 一句话总结：AWQ 发现 LLM 中只有约 1% 的权重通道对量化误差影响最大，而且要按激活幅度而不是权重大小来找它们。它把这些通道的权重放大、对应输入缩小（数学上等价），在不用混合精度、不做反向传播的前提下，把权重压到 4 bit 而精度几乎不变。配套推理框架 TinyChat 把约 4 倍的显存节省转化为 3 倍以上的实测加速。  适合读者：了解 Transformer 推理和量化基本
         </div>
       </a>
 

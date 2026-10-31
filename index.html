@@ -588,14 +588,14 @@
       <h2 class="index-header">
         
         <a href="/2026/09/13/OmniQuant/" target="_self">
-          OmniQuant LWC
+          OmniQuant：用少量可学习参数做低比特大模型量化
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2026/09/13/OmniQuant/" target="_self">
         <div>
-          123论文：OmniQuant: Omnidirectionally Calibrated Quantization for Large Language Models链接：https://arxiv.org/abs/2308.13137代码：https://github.com/OpenGVLab/OmniQuant  算法原理 权重量化通常使用 min-max 方式，取权重张量的最小值和最大值
+          📌 一句话总结：OmniQuant 冻结大模型的原始权重，只学习两类量化参数：权重的裁剪强度（LWC），以及把激活量化难度转移到权重上的等价变换系数（LET）。它按 Transformer block 逐块做梯度优化，成本仍是 PTQ 级别（128 条校准样本，单张 A100 上 1–16 小时），在 W2A16、W3A16、W4A4 等低比特设置下明显好于 GPTQ、AWQ、SmoothQu
         </div>
       </a>
 

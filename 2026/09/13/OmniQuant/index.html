@@ -19,26 +19,29 @@
   <meta name="author" content="Jilei Hou">
   <meta name="keywords" content="">
   
-    <meta name="description" content="123论文：OmniQuant: Omnidirectionally Calibrated Quantization for Large Language Models链接：https:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2308.13137代码：https:&#x2F;&#x2F;github.com&#x2F;OpenGVLab&#x2F;OmniQuant  算法原理 权重量化通常使用 min-max 方式，取权重张量的最小值和最大值">
+    <meta name="description" content="📌 一句话总结：OmniQuant 冻结大模型的原始权重，只学习两类量化参数：权重的裁剪强度（LWC），以及把激活量化难度转移到权重上的等价变换系数（LET）。它按 Transformer block 逐块做梯度优化，成本仍是 PTQ 级别（128 条校准样本，单张 A100 上 1–16 小时），在 W2A16、W3A16、W4A4 等低比特设置下明显好于 GPTQ、AWQ、SmoothQu">
 <meta property="og:type" content="article">
-<meta property="og:title" content="OmniQuant LWC">
+<meta property="og:title" content="OmniQuant：用少量可学习参数做低比特大模型量化">
 <meta property="og:url" content="https://jilei-hou.github.io/2026/09/13/OmniQuant/index.html">
 <meta property="og:site_name" content="455のblog">
-<meta property="og:description" content="123论文：OmniQuant: Omnidirectionally Calibrated Quantization for Large Language Models链接：https:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2308.13137代码：https:&#x2F;&#x2F;github.com&#x2F;OpenGVLab&#x2F;OmniQuant  算法原理 权重量化通常使用 min-max 方式，取权重张量的最小值和最大值">
+<meta property="og:description" content="📌 一句话总结：OmniQuant 冻结大模型的原始权重，只学习两类量化参数：权重的裁剪强度（LWC），以及把激活量化难度转移到权重上的等价变换系数（LET）。它按 Transformer block 逐块做梯度优化，成本仍是 PTQ 级别（128 条校准样本，单张 A100 上 1–16 小时），在 W2A16、W3A16、W4A4 等低比特设置下明显好于 GPTQ、AWQ、SmoothQu">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://jilei-hou.github.io/img/OmniQuant/1.png">
-<meta property="og:image" content="https://jilei-hou.github.io/img/OmniQuant/4.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/OmniQuant/fig1.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/OmniQuant/fig3.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/OmniQuant/pipeline.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/OmniQuant/figA3.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/OmniQuant/figA2.png">
 <meta property="article:published_time" content="2026-09-13T09:30:00.000Z">
-<meta property="article:modified_time" content="2026-09-27T04:10:38.707Z">
+<meta property="article:modified_time" content="2026-10-31T10:21:12.852Z">
 <meta property="article:author" content="Jilei Hou">
 <meta property="article:tag" content="量化论文">
 <meta property="article:tag" content="PTQ">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://jilei-hou.github.io/img/OmniQuant/1.png">
+<meta name="twitter:image" content="https://jilei-hou.github.io/img/OmniQuant/fig1.png">
   
   
   
-  <title>OmniQuant LWC - 455のblog</title>
+  <title>OmniQuant：用少量可学习参数做低比特大模型量化 - 455のblog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -309,7 +312,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="OmniQuant LWC"></span>
+            <span id="subtitle" data-typed-text="OmniQuant：用少量可学习参数做低比特大模型量化"></span>
           
         </div>
 
@@ -332,7 +335,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          1.3k 字
+          11k 字
         
       </span>
     
@@ -343,7 +346,7 @@
         
         
         
-          11 分钟
+          95 分钟
         
       </span>
     
@@ -382,49 +385,614 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">OmniQuant LWC</h1>
+            <h1 id="seo-header">OmniQuant：用少量可学习参数做低比特大模型量化</h1>
             
             
               <div class="markdown-body">
                 
-                <figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs awk">论文：OmniQuant: Omnidirectionally Calibrated Quantization <span class="hljs-keyword">for</span> Large Language Models<br>链接：https:<span class="hljs-regexp">//</span>arxiv.org<span class="hljs-regexp">/abs/</span><span class="hljs-number">2308.13137</span><br>代码：https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/OpenGVLab/</span>OmniQuant<br></code></pre></td></tr></table></figure>
-
-<h1 id="算法原理"><a href="#算法原理" class="headerlink" title="算法原理"></a>算法原理</h1><p><img src="/../img/OmniQuant/1.png" srcset="/img/loading.gif" lazyload alt="OmniQuant LWC 论文原文"></p>
-<p>权重量化通常使用 min-max 方式，取权重张量的最小值和最大值作为量化边界，这种做法存在一个问题：权重中的离群值会拉大量化范围，导致大部分正常权重被分配到过少的量化级别上。</p>
-<p>LWC（Learnable Weight Clipping，可学习权重裁剪）引入了两个可学习参数 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi></mrow><annotation encoding="application/x-tex">\gamma</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span> 对权重的最大、最小值做裁剪。</p>
-<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>W</mi><mi mathvariant="bold">q</mi></msub><mo>=</mo><mtext>clamp</mtext><mrow><mo fence="true">(</mo><mrow><mo fence="true">⌊</mo><mfrac><mi mathvariant="bold">W</mi><mi>h</mi></mfrac><mo fence="true">⌉</mo></mrow><mo>+</mo><mi>z</mi><mo separator="true">,</mo><mtext> </mtext><mn>0</mn><mo separator="true">,</mo><mtext> </mtext><msup><mn>2</mn><mi>N</mi></msup><mo>−</mo><mn>1</mn><mo fence="true">)</mo></mrow></mrow><annotation encoding="application/x-tex">W_\mathbf{q} = \text{clamp}\left(\left\lfloor \frac{\mathbf{W}}{h} \right\rceil + z,\ 0,\ 2^N - 1\right)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1611em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathbf mtight">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord text"><span class="mord">clamp</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">(</span></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">⌊</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3631em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">h</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathbf" style="margin-right:0.016em;">W</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">⌉</span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">)</span></span></span></span></span></span></span></p>
-<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>h</mi><mo>=</mo><mfrac><mrow><mi>γ</mi><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo stretchy="false">)</mo><mo>−</mo><mi>β</mi><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mn>2</mn><mi>N</mi></msup><mo>−</mo><mn>1</mn></mrow></mfrac><mo separator="true">,</mo><mspace width="1em"><mi>z</mi><mo>=</mo><mo>−</mo><mrow><mo fence="true">⌊</mo><mfrac><mrow><mi>β</mi><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo stretchy="false">)</mo></mrow><mi>h</mi></mfrac><mo fence="true">⌉</mo></mrow></mspace></mrow><annotation encoding="application/x-tex">h = \frac{\gamma \max(\mathbf{W}) - \beta \min(\mathbf{W})}{2^N - 1}, \quad z = -\left\lfloor \frac{\beta \min(\mathbf{W})}{h} \right\rceil</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal">h</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7673em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">max</span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">min</span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord">−</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">⌊</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">h</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">min</span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">⌉</span></span></span></span></span></span></span></p>
-<p>其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>=</mo><mtext>Sigmoid</mtext><mo stretchy="false">(</mo><msub><mi>t</mi><mi>γ</mi></msub><mo stretchy="false">)</mo><mo>∈</mo><mo stretchy="false">[</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\gamma = \text{Sigmoid}(t_{\gamma}) \in [0, 1]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord text"><span class="mord">Sigmoid</span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0556em;">γ</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span></span>，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo>=</mo><mtext>Sigmoid</mtext><mo stretchy="false">(</mo><msub><mi>t</mi><mi>β</mi></msub><mo stretchy="false">)</mo><mo>∈</mo><mo stretchy="false">[</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\beta = \text{Sigmoid}(t_{\beta}) \in [0, 1]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord text"><span class="mord">Sigmoid</span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0528em;">β</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span></span>，初始值 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\gamma = 1, \beta = 1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span>，基于梯度自动更新：</p>
-<ul>
-<li><strong>前向传播</strong>：使用当前的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi></mrow><annotation encoding="application/x-tex">\gamma</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span> 计算裁剪阈值，对权重模拟量化，得到 Block（decoder layer）的量化输出；</li>
-<li><strong>反向传播</strong>：计算 Block 量化输出和浮点输出的 MSE，通过 STE 技巧（梯度跨过不可导的 Round）更新 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>t</mi><mi>γ</mi></msub><mo separator="true">,</mo><msub><mi>t</mi><mi>β</mi></msub></mrow><annotation encoding="application/x-tex">t_{\gamma}, t_{\beta}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9012em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0556em;">γ</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0528em;">β</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>。</li>
-</ul>
-<h1 id="算法实现"><a href="#算法实现" class="headerlink" title="算法实现"></a>算法实现</h1><h2 id="配置方式"><a href="#配置方式" class="headerlink" title="配置方式"></a>配置方式</h2><table>
+                <blockquote>
+<p>📌 <strong>一句话总结</strong>：OmniQuant 冻结大模型的原始权重，只学习两类量化参数：权重的裁剪强度（LWC），以及把激活量化难度转移到权重上的等价变换系数（LET）。它按 Transformer block 逐块做梯度优化，成本仍是 PTQ 级别（128 条校准样本，单张 A100 上 1–16 小时），在 W2A16、W3A16、W4A4 等低比特设置下明显好于 GPTQ、AWQ、SmoothQuant。学到的参数都能融合进权重，推理时没有额外开销。</p>
+</blockquote>
+<p><strong>适合读者</strong>：做大模型推理部署或模型压缩的同学。需要了解 INT 量化的 scale、zero-point 和 per-channel &#x2F; per-token 等基本概念。</p>
+<p><strong>资料版本</strong>：arXiv 2308.13137 v3（2024-03-18）和官方仓库 OpenGVLab&#x2F;OmniQuant。文中数字均摘自论文表格；困惑度（PPL）越低越好，准确率越高越好。</p>
+<h1 id="论文概览"><a href="#论文概览" class="headerlink" title="论文概览"></a>论文概览</h1><table>
 <thead>
 <tr>
-<th align="left">quant_method</th>
-<th align="left">参数名称</th>
-<th align="left">默认值</th>
-<th align="left">参数作用</th>
+<th align="left">项目</th>
+<th align="left">内容</th>
 </tr>
 </thead>
 <tbody><tr>
-<td align="left">lwc</td>
-<td align="left">lr</td>
-<td align="left">0.001</td>
-<td align="left"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi></mrow><annotation encoding="application/x-tex">\gamma</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span> 的学习率</td>
+<td align="left">标题</td>
+<td align="left">OmniQuant: Omnidirectionally Calibrated Quantization for Large Language Models</td>
 </tr>
 <tr>
-<td align="left">lwc</td>
-<td align="left">epochs</td>
-<td align="left">10</td>
-<td align="left">训练 epoch</td>
+<td align="left">作者与机构</td>
+<td align="left">Wenqi Shao、Mengzhao Chen 等 10 人；上海人工智能实验室 OpenGVLab、香港大学、香港中文大学；通讯作者 Ping Luo</td>
+</tr>
+<tr>
+<td align="left">发表</td>
+<td align="left">ICLR 2024 Spotlight；arXiv 2308.13137（v1 2023-08-25，v3 2024-03-18）</td>
+</tr>
+<tr>
+<td align="left">代码</td>
+<td align="left"><a target="_blank" rel="noopener" href="https://github.com/OpenGVLab/OmniQuant">OpenGVLab&#x2F;OmniQuant</a>（MIT 许可），附预训练的量化参数</td>
+</tr>
+<tr>
+<td align="left">支持的设置</td>
+<td align="left">仅权重量化：W4A16、W3A16、W2A16（均可分组）；权重-激活量化：W6A6、W4A4</td>
+</tr>
+<tr>
+<td align="left">验证过的模型</td>
+<td align="left">OPT（125M–66B）、LLaMA（7B–65B）、LLaMA-2（7B–70B）、LLaMA-2-Chat、Falcon-180B</td>
 </tr>
 </tbody></table>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs python">config = [&#123;<span class="hljs-string">&quot;method&quot;</span>: &#123;<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;lwc&quot;</span>, <span class="hljs-string">&quot;lr&quot;</span>: <span class="hljs-number">0.001</span>, <span class="hljs-string">&quot;epochs&quot;</span>: <span class="hljs-number">10</span>&#125;&#125;]<br></code></pre></td></tr></table></figure>
+<p><img src="/../img/OmniQuant/fig1.png" srcset="/img/loading.gif" lazyload alt="论文图 1。(a) LLaMA-7B W4A4：OmniQuant 用 128 条样本、1.6 小时，平均准确率 52.65%；LLM-QAT 用 10 万条样本、90 小时，46.43%；SmoothQuant 用 128 条样本、10 分钟，38.41%。(b)(c) LLaMA-13B 在不同比特下的 WikiText2 困惑度（对数刻度）。"></p>
+<h1 id="要解决的问题"><a href="#要解决的问题" class="headerlink" title="要解决的问题"></a>要解决的问题</h1><h2 id="PTQ-与-QAT-的取舍"><a href="#PTQ-与-QAT-的取舍" class="headerlink" title="PTQ 与 QAT 的取舍"></a>PTQ 与 QAT 的取舍</h2><p>大模型部署首先受限于显存和算力。以 GPT-3 为例，FP16 参数约需 350 GB 显存，至少要 5 张 A100-80G 才能推理。量化是降低这两项开销的主要手段，有两条路线：</p>
+<table>
+<thead>
+<tr>
+<th align="left">路线</th>
+<th align="left">做法</th>
+<th align="left">成本示例</th>
+<th align="left">低比特表现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">QAT（量化感知训练）</td>
+<td align="left">训练时模拟量化，更新全部权重</td>
+<td align="left">LLM-QAT：10 万条样本、数百 GPU 小时</td>
+<td align="left">精度较好，但在大模型上成本过高</td>
+</tr>
+<tr>
+<td align="left">PTQ（训练后量化）</td>
+<td align="left">不训练权重，用少量校准数据确定量化参数</td>
+<td align="left">GPTQ 量化 LLaMA-13B：128 条样本、单张 A100 约 1 小时</td>
+<td align="left">W4A16、W8A8 表现好；W2A16、W4A4 明显掉点</td>
+</tr>
+</tbody></table>
+<h2 id="两类量化对象与记号"><a href="#两类量化对象与记号" class="headerlink" title="两类量化对象与记号"></a>两类量化对象与记号</h2><ul>
+<li><strong>仅权重量化（weight-only）</strong>：例如 W4A16，权重 4 bit，激活保持 16 bit。主要节省显存和访存带宽。</li>
+<li><strong>权重-激活量化（weight-activation）</strong>：例如 W6A6、W4A4，权重和激活都量化，可以用低比特矩阵乘加速计算。</li>
+<li><strong>记号</strong>：W3A16g128 表示 3 bit 权重、16 bit 激活，每 128 个权重为一组共享量化参数；不带 g 表示按输出通道（per-channel）量化。权重-激活量化中，激活按 token（per-token）量化。</li>
+</ul>
+<h2 id="现有-PTQ-方法在低比特下失效的原因"><a href="#现有-PTQ-方法在低比特下失效的原因" class="headerlink" title="现有 PTQ 方法在低比特下失效的原因"></a>现有 PTQ 方法在低比特下失效的原因</h2><ol>
+<li>**激活有离群通道。**少数通道的数值远大于其他通道（论文附录中 OPT-13B 某层激活的离群值约为 70），直接量化会让普通通道几乎分不到量化级别。SmoothQuant 和 Outlier Suppression+（下文简称 OS+）把量化难度从激活迁移到权重，但迁移强度是预先设定或网格搜索出来的。</li>
+<li>**权重量化误差同样关键。**SpQR、OWQ 用混合精度保留重要权重，AWQ 用网格搜索出的通道缩放来保护它们。</li>
+</ol>
+<p>这些手工设定的参数在 W4A16、W8A8 下够用，到 W2A16、W4A4 就会明显掉点。论文要回答的问题是：能否在保持 PTQ 时间和数据成本的同时，达到 QAT 的精度。</p>
+<h1 id="核心思路"><a href="#核心思路" class="headerlink" title="核心思路"></a>核心思路</h1><p>OmniQuant 的做法是：原始全精度权重不动，只把量化参数变成可学习的，并且一次只优化一个 Transformer block。QAT 要更新全部权重，OmniQuant 只学习裁剪强度和等价变换系数，所以数据和时间成本仍是 PTQ 级别。方法由三部分组成：</p>
+<table>
+<thead>
+<tr>
+<th align="left">组成部分</th>
+<th align="left">针对的问题</th>
+<th align="left">学习的参数</th>
+<th align="left">推理时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>LWC</strong>（Learnable Weight Clipping，可学习权重裁剪）</td>
+<td align="left">权重极值撑大量化范围</td>
+<td align="left">上、下界的裁剪强度 γ、β</td>
+<td align="left">只用来确定 scale 和零点，不留额外参数</td>
+</tr>
+<tr>
+<td align="left"><strong>LET</strong>（Learnable Equivalent Transformation，可学习等价变换）</td>
+<td align="left">激活中的离群通道</td>
+<td align="left">通道缩放 s、通道平移 δ、注意力中的缩放 s_a</td>
+<td align="left">融合进 LayerNorm 和线性层的权重、偏置</td>
+</tr>
+<tr>
+<td align="left"><strong>逐块量化误差最小化</strong></td>
+<td align="left">整个模型联合优化的解空间太大</td>
+<td align="left">每次只优化一个 block 的 LWC、LET 参数</td>
+<td align="left">只是训练框架，不影响推理</td>
+</tr>
+</tbody></table>
+<p><img src="/../img/OmniQuant/fig3.png" srcset="/img/loading.gif" lazyload alt="论文图 3：OmniQuant 在一个 Transformer block 中的结构。火焰图标为可学习参数，雪花图标为冻结的全精度权重，粉色模块在量化完成后都可以消除。"></p>
+<p>图左侧是权重的处理链：冻结的全精度权重先经过等价变换（Transformation），再经过可学习裁剪（Clipping），最后量化。图中主体是 block 内的数据流：LayerNorm 之后、Q 与 K 相乘之前、输出投影之前、FFN 第一层之前各有一次等价变换，FFN 第二层（FC2）之前没有。</p>
+<h1 id="方法细节"><a href="#方法细节" class="headerlink" title="方法细节"></a>方法细节</h1><h2 id="逐块量化误差最小化"><a href="#逐块量化误差最小化" class="headerlink" title="逐块量化误差最小化"></a>逐块量化误差最小化</h2><p>优化目标是让量化后的 block 输出尽量接近全精度 block 的输出：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>arg</mi><mo>⁡</mo><munder><mrow><mi>min</mi><mo>⁡</mo></mrow><mrow><msub><mi mathvariant="normal">Θ</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi mathvariant="normal">Θ</mi><mn>2</mn></msub></mrow></munder><mrow><mo fence="true">∥</mo><mi mathvariant="script">F</mi><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo separator="true">,</mo><mi mathvariant="bold">X</mi><mo stretchy="false">)</mo><mo>−</mo><mi mathvariant="script">F</mi><mrow><mo fence="true">(</mo><msub><mi>Q</mi><mi>w</mi></msub><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo separator="true">;</mo><msub><mi mathvariant="normal">Θ</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi mathvariant="normal">Θ</mi><mn>2</mn></msub><mo stretchy="false">)</mo><mo separator="true">,</mo><mtext> </mtext><msub><mi>Q</mi><mi>a</mi></msub><mo stretchy="false">(</mo><mi mathvariant="bold">X</mi><mo separator="true">,</mo><msub><mi mathvariant="normal">Θ</mi><mn>2</mn></msub><mo stretchy="false">)</mo><mo fence="true">)</mo></mrow><mo fence="true">∥</mo></mrow></mrow><annotation encoding="application/x-tex">\arg\min_{\Theta_1,\Theta_2}\left\|\mathcal{F}(\mathbf{W},\mathbf{X})-\mathcal{F}\left(Q_w(\mathbf{W};\Theta_1,\Theta_2),\,Q_a(\mathbf{X},\Theta_2)\right)\right\|</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.6304em;vertical-align:-0.8804em;"></span><span class="mop">ar<span style="margin-right:0.0139em;">g</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6679em;"><span style="top:-2.3557em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mtight">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3173em;"><span style="top:-2.357em;margin-left:0em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span><span class="mpunct mtight">,</span><span class="mord mtight"><span class="mord mtight">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3173em;"><span style="top:-2.357em;margin-left:0em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">min</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.8804em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">∥</span><span class="mord mathcal" style="margin-right:0.0993em;">F</span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathbf">X</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathcal" style="margin-right:0.0993em;">F</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">(</span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mpunct">;</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathbf">X</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mclose delimcenter" style="top:0em;">)</span></span><span class="mclose delimcenter" style="top:0em;">∥</span></span></span></span></span></span></p>
+<ul>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">F</mi></mrow><annotation encoding="application/x-tex">\mathcal{F}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathcal" style="margin-right:0.0993em;">F</span></span></span></span> 是一个 Transformer block 的映射，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">W</mi></mrow><annotation encoding="application/x-tex">\mathbf{W}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span></span></span></span>、<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">X</mi></mrow><annotation encoding="application/x-tex">\mathbf{X}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf">X</span></span></span></span> 是全精度权重和激活，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Q</mi><mi>w</mi></msub></mrow><annotation encoding="application/x-tex">Q_w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>、<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Q</mi><mi>a</mi></msub></mrow><annotation encoding="application/x-tex">Q_a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 是权重和激活的量化器。</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="normal">Θ</mi><mn>1</mn></msub><mo>=</mo><mo stretchy="false">{</mo><mi>γ</mi><mo separator="true">,</mo><mi>β</mi><mo stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">\Theta_1=\{\gamma,\beta\}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mclose">}</span></span></span></span> 是 LWC 的参数，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="normal">Θ</mi><mn>2</mn></msub><mo>=</mo><mo stretchy="false">{</mo><mi>s</mi><mo separator="true">,</mo><mi>δ</mi><mo separator="true">,</mo><msub><mi>s</mi><mi>a</mi></msub><mo stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">\Theta_2=\{s,\delta,s_a\}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0379em;">δ</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">s</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">}</span></span></span></span> 是 LET 的参数。</li>
+</ul>
+<p>选择逐块优化有两个原因。第一，LWC 和 LET 在同一个可微目标下联合优化，同一套流程既能做仅权重量化，也能做权重-激活量化。第二，需要优化的只有少量量化参数，比 AdaRound、BRECQ 这类要调整全部权重舍入的 PTQ 方法容易得多：LLaMA-2 全系列（7B–70B）在一张 A100-40G 上就能完成量化。</p>
+<p>完整流程如下图，对应论文附录的算法 1：</p>
+<p><img src="/../img/OmniQuant/pipeline.png" srcset="/img/loading.gif" lazyload alt="OmniQuant 逐块校准流程"></p>
+<ol>
+<li>初始化两路输入：<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">X</mi><mrow><mi>f</mi><mi>p</mi></mrow></msub><mo>=</mo><msub><mi mathvariant="bold">X</mi><mi>q</mi></msub><mo>=</mo><mi mathvariant="bold">X</mi></mrow><annotation encoding="application/x-tex">\mathbf{X}_{fp}=\mathbf{X}_q=\mathbf{X}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9722em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span><span class="mord mathnormal mtight">p</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9722em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf">X</span></span></span></span>（校准数据）。</li>
+<li>对第 i 个 block，先用全精度 block 算出目标输出 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">X</mi><mrow><mi>f</mi><mi>p</mi></mrow></msub><mo>←</mo><msub><mi mathvariant="script">B</mi><mi>i</mi></msub><mo stretchy="false">(</mo><msub><mi mathvariant="bold">X</mi><mrow><mi>f</mi><mi>p</mi></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\mathbf{X}_{fp}\leftarrow\mathcal{B}_i(\mathbf{X}_{fp})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9722em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span><span class="mord mathnormal mtight">p</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">←</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathcal" style="margin-right:0.0304em;">B</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0304em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span><span class="mord mathnormal mtight">p</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span>，再初始化 LWC 和 LET 参数。</li>
+<li>训练若干 epoch：对 block 施加 LET 变换，用 LWC 量化权重，以 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">X</mi><mi>q</mi></msub></mrow><annotation encoding="application/x-tex">\mathbf{X}_q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9722em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> 为输入做前向，计算与目标输出的 L2 误差，反向传播只更新 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="normal">Θ</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">\Theta_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>、<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="normal">Θ</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\Theta_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord">Θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>。</li>
+<li>训练结束后，把 LET 系数融合进相邻层，用学到的 γ、β 量化权重，得到这个 block 的最终低比特版本。</li>
+<li>用量化好的 block 计算 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">X</mi><mi>q</mi></msub><mo>←</mo><msub><mi mathvariant="script">B</mi><mi>i</mi></msub><mo stretchy="false">(</mo><msub><mi mathvariant="bold">X</mi><mi>q</mi></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\mathbf{X}_q\leftarrow\mathcal{B}_i(\mathbf{X}_q)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9722em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">←</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathcal" style="margin-right:0.0304em;">B</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0304em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span>，作为下一个 block 的输入，直到最后一个 block。</li>
+</ol>
+<p>量化路径的输入来自已经量化好的前几个 block，所以每个 block 的优化目标里已经包含了前面累积的误差。论文附录比较了各 block 的量化误差：基于网格搜索的 AWQ、OS+ 在深层的误差明显更大。</p>
+<p><img src="/../img/OmniQuant/figA3.png" srcset="/img/loading.gif" lazyload alt="论文图 A3：LLaMA-7B 各 block 的量化误差。(a) W3A16，对比 AWQ 和 RTN；(b) W4A4，对比 OS+ 和 RTN。越靠后的 block 误差累积越大，OmniQuant 在每个 block 上都更低。"></p>
+<h2 id="LWC：学习裁剪比例"><a href="#LWC：学习裁剪比例" class="headerlink" title="LWC：学习裁剪比例"></a>LWC：学习裁剪比例</h2><p>权重里的极值会把量化范围撑大，大部分普通权重只能分到很少的量化级别。LWC 通过学习裁剪强度来收窄量化范围：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="bold">W</mi><mi>q</mi></msub><mo>=</mo><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">p</mi></mrow><mrow><mo fence="true">(</mo><mrow><mo fence="true">⌊</mo><mfrac><mi mathvariant="bold">W</mi><mi>h</mi></mfrac><mo fence="true">⌉</mo></mrow><mo>+</mo><mi>z</mi><mo separator="true">,</mo><mtext> </mtext><mn>0</mn><mo separator="true">,</mo><mtext> </mtext><msup><mn>2</mn><mi>N</mi></msup><mo>−</mo><mn>1</mn><mo fence="true">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathbf{W}_q=\mathrm{clamp}\left(\left\lfloor\frac{\mathbf{W}}{h}\right\rceil+z,\ 0,\ 2^N-1\right)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9722em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.016em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord"><span class="mord mathrm">clamp</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">(</span></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">⌊</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3631em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">h</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathbf" style="margin-right:0.016em;">W</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">⌉</span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">)</span></span></span></span></span></span></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>h</mi><mo>=</mo><mfrac><mrow><mi>γ</mi><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo stretchy="false">)</mo><mo>−</mo><mi>β</mi><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mn>2</mn><mi>N</mi></msup><mo>−</mo><mn>1</mn></mrow></mfrac><mo separator="true">,</mo><mspace width="1em"><mi>z</mi><mo>=</mo><mo>−</mo><mrow><mo fence="true">⌊</mo><mfrac><mrow><mi>β</mi><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi mathvariant="bold">W</mi><mo stretchy="false">)</mo></mrow><mi>h</mi></mfrac><mo fence="true">⌉</mo></mrow></mspace></mrow><annotation encoding="application/x-tex">h=\frac{\gamma\max(\mathbf{W})-\beta\min(\mathbf{W})}{2^N-1},\quad z=-\left\lfloor\frac{\beta\min(\mathbf{W})}{h}\right\rceil</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal">h</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7673em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0556em;">γ</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">max</span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">min</span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord">−</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">⌊</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">h</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">min</span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">⌉</span></span></span></span></span></span></span></p>
+<ul>
+<li>N 是目标比特数，h 是量化步长（scale），z 是零点，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">⌊</mo><mo>⋅</mo><mo stretchy="false">⌉</mo></mrow><annotation encoding="application/x-tex">\lfloor\cdot\rceil</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">⌊</span><span class="mord">⋅</span><span class="mclose">⌉</span></span></span></span> 表示四舍五入。</li>
+<li>γ、β ∈ [0, 1] 分别是上界和下界的裁剪强度，用 sigmoid 参数化。γ &#x3D; β &#x3D; 1 时退化为普通的 MinMax 量化。</li>
+<li>每个量化单元有一对 γ、β：按通道量化时是每个输出通道，分组量化时是每一组。官方代码把 sigmoid 的输入初始化为 4（sigmoid(4) ≈ 0.98），也就是从接近 MinMax 的状态开始学习。</li>
+</ul>
+<p>PACT 直接学习裁剪阈值，LSQ 直接学习步长和零点；LWC 学的是相对 max &#x2F; min 的比例。论文把 PACT 和 LSQ 换进 OmniQuant 的流程做了对比（LLaMA-7B，WikiText2 PPL，FP16 为 5.68）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">裁剪方法</th>
+<th align="left">W3A16</th>
+<th align="left">W4A4</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">MinMax（不裁剪）</td>
+<td align="left">25.73</td>
+<td align="left">14.49</td>
+</tr>
+<tr>
+<td align="left">PACT</td>
+<td align="left">6.95</td>
+<td align="left">18.25</td>
+</tr>
+<tr>
+<td align="left">LSQ</td>
+<td align="left">6.63</td>
+<td align="left">15.03</td>
+</tr>
+<tr>
+<td align="left">LWC</td>
+<td align="left"><strong>6.47</strong></td>
+<td align="left"><strong>11.26</strong></td>
+</tr>
+</tbody></table>
+<p>W4A4 下 LET 每次迭代都会改变权重分布（<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi mathvariant="bold">W</mi><mo>~</mo></mover><mo>=</mo><mi>s</mi><mo>⊙</mo><mi mathvariant="bold">W</mi></mrow><annotation encoding="application/x-tex">\tilde{\mathbf{W}}=s\odot\mathbf{W}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.923em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊙</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span></span></span></span>），绝对阈值跟不上这种变化，PACT 甚至比不裁剪还差；相对比例则会随分布一起变化。另一个现象是比特越低裁剪越多：W3A16g128 中约 70% 的组裁剪强度大于 0.95，W2A16g128 中这一比例只有约 50%。</p>
+<h2 id="LET：可学习的等价变换"><a href="#LET：可学习的等价变换" class="headerlink" title="LET：可学习的等价变换"></a>LET：可学习的等价变换</h2><p>激活的离群值集中在固定的几个通道上。LET 用数学上等价的变换把这些通道压平，把难度转移到权重，再由 LWC 处理权重。<strong>它和 SmoothQuant 的区别在于：变换系数通过梯度学习，并且同时使用通道缩放和通道平移</strong>。</p>
+<p>**线性层。**输入 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">X</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>T</mi><mo>×</mo><msub><mi>C</mi><mrow><mi>i</mi><mi>n</mi></mrow></msub></mrow></msup></mrow><annotation encoding="application/x-tex">\mathbf{X}\in\mathbb{R}^{T\times C_{in}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7252em;vertical-align:-0.0391em;"></span><span class="mord mathbf">X</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8413em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">T</span><span class="mbin mtight">×</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3281em;"><span style="top:-2.357em;margin-left:-0.0715em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">in</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>，权重 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">W</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><msub><mi>C</mi><mrow><mi>i</mi><mi>n</mi></mrow></msub><mo>×</mo><msub><mi>C</mi><mrow><mi>o</mi><mi>u</mi><mi>t</mi></mrow></msub></mrow></msup></mrow><annotation encoding="application/x-tex">\mathbf{W}\in\mathbb{R}^{C_{in}\times C_{out}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7252em;vertical-align:-0.0391em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8413em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3281em;"><span style="top:-2.357em;margin-left:-0.0715em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">in</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span><span class="mbin mtight">×</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2963em;"><span style="top:-2.357em;margin-left:-0.0715em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">t</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>，偏置为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">B</mi></mrow><annotation encoding="application/x-tex">\mathbf{B}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf">B</span></span></span></span>：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="bold">Y</mi><mo>=</mo><mi mathvariant="bold">X</mi><mi mathvariant="bold">W</mi><mo>+</mo><mi mathvariant="bold">B</mi><mo>=</mo><mrow><mo fence="true">[</mo><mo stretchy="false">(</mo><mi mathvariant="bold">X</mi><mo>−</mo><mi>δ</mi><mo stretchy="false">)</mo><mo>⊘</mo><mi>s</mi><mo fence="true">]</mo></mrow><mo>⋅</mo><mrow><mo fence="true">[</mo><mi>s</mi><mo>⊙</mo><mi mathvariant="bold">W</mi><mo fence="true">]</mo></mrow><mo>+</mo><mrow><mo fence="true">[</mo><mi mathvariant="bold">B</mi><mo>+</mo><mi>δ</mi><mi mathvariant="bold">W</mi><mo fence="true">]</mo></mrow><mo>=</mo><mover accent="true"><mi mathvariant="bold">X</mi><mo>~</mo></mover><mover accent="true"><mi mathvariant="bold">W</mi><mo>~</mo></mover><mo>+</mo><mover accent="true"><mi mathvariant="bold">B</mi><mo>~</mo></mover></mrow><annotation encoding="application/x-tex">\mathbf{Y}=\mathbf{X}\mathbf{W}+\mathbf{B}=\left[(\mathbf{X}-\delta)\oslash s\right]\cdot\left[s\odot\mathbf{W}\right]+\left[\mathbf{B}+\delta\mathbf{W}\right]=\tilde{\mathbf{X}}\tilde{\mathbf{W}}+\tilde{\mathbf{B}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf" style="margin-right:0.0288em;">Y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7694em;vertical-align:-0.0833em;"></span><span class="mord mathbf" style="margin-right:0.016em;">XW</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf">B</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">[</span><span class="mopen">(</span><span class="mord mathbf">X</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0379em;">δ</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊘</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">s</span><span class="mclose delimcenter" style="top:0em;">]</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">[</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊙</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose delimcenter" style="top:0em;">]</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">[</span><span class="mord mathbf">B</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0379em;">δ</span><span class="mord mathbf" style="margin-right:0.016em;">W</span><span class="mclose delimcenter" style="top:0em;">]</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.0063em;vertical-align:-0.0833em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">X</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.923em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">B</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span></span></span></span></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="bold">Y</mi><mo>=</mo><msub><mi>Q</mi><mi>a</mi></msub><mo stretchy="false">(</mo><mover accent="true"><mi mathvariant="bold">X</mi><mo>~</mo></mover><mo stretchy="false">)</mo><mtext> </mtext><msub><mi>Q</mi><mi>w</mi></msub><mo stretchy="false">(</mo><mover accent="true"><mi mathvariant="bold">W</mi><mo>~</mo></mover><mo stretchy="false">)</mo><mo>+</mo><mover accent="true"><mi mathvariant="bold">B</mi><mo>~</mo></mover></mrow><annotation encoding="application/x-tex">\mathbf{Y}=Q_a(\tilde{\mathbf{X}})\,Q_w(\tilde{\mathbf{W}})+\tilde{\mathbf{B}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf" style="margin-right:0.0288em;">Y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.173em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">X</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.923em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">B</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span></span></span></span></span></p>
+<ul>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo separator="true">,</mo><mi>δ</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mn>1</mn><mo>×</mo><msub><mi>C</mi><mrow><mi>i</mi><mi>n</mi></mrow></msub></mrow></msup></mrow><annotation encoding="application/x-tex">s,\delta\in\mathbb{R}^{1\times C_{in}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0379em;">δ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8413em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span><span class="mbin mtight">×</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3281em;"><span style="top:-2.357em;margin-left:-0.0715em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">in</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span> 是每个输入通道的缩放和平移，⊘ 和 ⊙ 是逐元素除法和乘法。</li>
+<li>平移 δ 把各通道的分布移到 0 附近；缩放 s 把离群通道压小，同时把对应的权重行放大。</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Q</mi><mi>a</mi></msub></mrow><annotation encoding="application/x-tex">Q_a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 是普通 MinMax 量化器，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Q</mi><mi>w</mi></msub></mrow><annotation encoding="application/x-tex">Q_w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 是带 LWC 的量化器。</li>
+<li>融合方式：<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi mathvariant="bold">X</mi><mo>~</mo></mover></mrow><annotation encoding="application/x-tex">\tilde{\mathbf{X}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.923em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">X</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span></span></span></span> 中的 s、δ 吸收进前一个 LayerNorm 或线性层，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi mathvariant="bold">W</mi><mo>~</mo></mover></mrow><annotation encoding="application/x-tex">\tilde{\mathbf{W}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.923em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf" style="margin-right:0.016em;">W</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span></span></span></span> 中的 s 直接乘进 W，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi mathvariant="bold">B</mi><mo>~</mo></mover></mrow><annotation encoding="application/x-tex">\tilde{\mathbf{B}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.923em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">B</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span></span></span></span> 作为新的偏置。推理时不增加参数和计算。</li>
+</ul>
+<p>**注意力。**为了把 Q、K 以及 KV cache 也量化到低比特，LET 对注意力打分再做一次通道缩放，然后用 MinMax 量化 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi mathvariant="bold">Q</mi><mo>~</mo></mover></mrow><annotation encoding="application/x-tex">\tilde{\mathbf{Q}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.1174em;vertical-align:-0.1944em;"></span><span class="mord katex-accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">Q</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span></span></span></span>、<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi mathvariant="bold">K</mi><mo>~</mo></mover></mrow><annotation encoding="application/x-tex">\tilde{\mathbf{K}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.923em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">K</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span></span></span></span>：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="bold">P</mi><mo>=</mo><mrow><mi mathvariant="normal">S</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">x</mi></mrow><mo stretchy="false">(</mo><mi mathvariant="bold">Q</mi><msup><mi mathvariant="bold">K</mi><mi>T</mi></msup><mo stretchy="false">)</mo><mo>=</mo><mrow><mi mathvariant="normal">S</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">x</mi></mrow><mrow><mo fence="true">(</mo><mo stretchy="false">(</mo><mi mathvariant="bold">Q</mi><mo>⊘</mo><msub><mi>s</mi><mi>a</mi></msub><mo stretchy="false">)</mo><mo stretchy="false">(</mo><msub><mi>s</mi><mi>a</mi></msub><mo>⊙</mo><msup><mi mathvariant="bold">K</mi><mi>T</mi></msup><mo stretchy="false">)</mo><mo fence="true">)</mo></mrow><mo>=</mo><mrow><mi mathvariant="normal">S</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">x</mi></mrow><mo stretchy="false">(</mo><mover accent="true"><mi mathvariant="bold">Q</mi><mo>~</mo></mover><msup><mover accent="true"><mi mathvariant="bold">K</mi><mo>~</mo></mover><mi>T</mi></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\mathbf{P}=\mathrm{Softmax}(\mathbf{Q}\mathbf{K}^T)=\mathrm{Softmax}\left((\mathbf{Q}\oslash s_a)(s_a\odot\mathbf{K}^T)\right)=\mathrm{Softmax}(\tilde{\mathbf{Q}}\tilde{\mathbf{K}}^T)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6861em;"></span><span class="mord mathbf">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.1413em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">Softmax</span></span><span class="mopen">(</span><span class="mord mathbf">Q</span><span class="mord"><span class="mord mathbf">K</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">T</span></span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.2413em;vertical-align:-0.35em;"></span><span class="mord"><span class="mord mathrm">Softmax</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size1">(</span></span><span class="mopen">(</span><span class="mord mathbf">Q</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊘</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal">s</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">s</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊙</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathbf">K</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">T</span></span></span></span></span></span></span></span><span class="mclose">)</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size1">)</span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.173em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">Softmax</span></span><span class="mopen">(</span><span class="mord katex-accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">Q</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span><span class="mord"><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">K</span></span><span style="top:-3.6051em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">~</span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">T</span></span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span></p>
+<p>s_a 可以吸收进 q_proj 和 k_proj 的权重。V 不单独变换，因为 [v_proj, out_proj] 这一组变换已经改变了它的通道分布。</p>
+<p>**作用位置。**LET 用在四组位置上。论文在 LLaMA-7B W4A4 上逐一去掉某一组，看平均 PPL（WikiText2 与 C4 的平均）的变化，完整方法为 12.87：</p>
+<ul>
+<li>[ln1, (q_proj, k_proj, v_proj)]：去掉后升到 19.87，影响最大，说明 LayerNorm 之后的离群值最严重。</li>
+<li>[ln2, fc1]：去掉后为 14.47。</li>
+<li>[Q, K]：去掉后为 13.34。</li>
+<li>[v_proj, out_proj]：去掉后为 13.03。</li>
+<li>FFN 第二层 fc2 不使用 LET：经过激活函数后特征很稀疏，学习时梯度不稳定。</li>
+</ul>
+<p><img src="/../img/OmniQuant/figA2.png" srcset="/img/loading.gif" lazyload alt="论文图 A2：OPT-13B 某个线性层的激活绝对值。(a) 原始激活，离群通道约为 70；(b) SmoothQuant 之后降到约 2，但离群通道仍明显高于其他通道；(c) LET 之后各通道幅度接近，更适合量化。"></p>
+<p>和已有等价变换方法的区别（论文附录表 A1）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">方法</th>
+<th align="left">变换操作</th>
+<th align="left">作用位置</th>
+<th align="left">系数来源</th>
+<th align="left">适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">SmoothQuant</td>
+<td align="left">缩放</td>
+<td align="left">线性层</td>
+<td align="left">预设迁移强度</td>
+<td align="left">权重-激活量化</td>
+</tr>
+<tr>
+<td align="left">AWQ</td>
+<td align="left">缩放</td>
+<td align="left">线性层</td>
+<td align="left">网格搜索</td>
+<td align="left">仅权重量化</td>
+</tr>
+<tr>
+<td align="left">OS+</td>
+<td align="left">缩放 + 平移</td>
+<td align="left">线性层</td>
+<td align="left">缩放靠网格搜索，平移预设</td>
+<td align="left">权重-激活量化</td>
+</tr>
+<tr>
+<td align="left"><strong>OmniQuant</strong></td>
+<td align="left">缩放 + 平移</td>
+<td align="left">线性层 + 注意力</td>
+<td align="left">梯度优化</td>
+<td align="left">两者都支持</td>
+</tr>
+</tbody></table>
+<h2 id="训练配置与成本"><a href="#训练配置与成本" class="headerlink" title="训练配置与成本"></a>训练配置与成本</h2><table>
+<thead>
+<tr>
+<th align="left">项目</th>
+<th align="left">论文设置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">校准数据</td>
+<td align="left">从 WikiText2 随机取 128 段，每段 2048 token</td>
+</tr>
+<tr>
+<td align="left">优化器</td>
+<td align="left">AdamW，weight decay 为 0，batch size 为 1</td>
+</tr>
+<tr>
+<td align="left">学习率</td>
+<td align="left">LWC 5e-3，LET 1e-2（官方代码的默认值正好相反，见「开源实现与上手」）</td>
+</tr>
+<tr>
+<td align="left">训练轮数</td>
+<td align="left">20 epoch；W2A16 用 40 epoch</td>
+</tr>
+<tr>
+<td align="left">LET 初始化</td>
+<td align="left">s 取 SmoothQuant 的结果，δ 取 OS+ 的结果</td>
+</tr>
+<tr>
+<td align="left">启用的组件</td>
+<td align="left">权重-激活量化：LWC + LET；仅权重量化：OPT 用 LWC + LET，LLaMA 只用 LWC</td>
+</tr>
+<tr>
+<td align="left">量化粒度</td>
+<td align="left">权重按通道或分组量化；权重-激活量化时激活按 token 量化，除 SoftMax 输出保持 16 bit 外，中间激活全部量化</td>
+</tr>
+</tbody></table>
+<p>LLaMA 系列的量化耗时（单张 A100-80G，128 条样本，20 epoch）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">量化类型</th>
+<th align="left">7B</th>
+<th align="left">13B</th>
+<th align="left">30B</th>
+<th align="left">65B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">仅权重量化</td>
+<td align="left">1.1 h</td>
+<td align="left">2.2 h</td>
+<td align="left">4.5 h</td>
+<td align="left">8.9 h</td>
+</tr>
+<tr>
+<td align="left">权重-激活量化</td>
+<td align="left">1.6 h</td>
+<td align="left">3.3 h</td>
+<td align="left">7.3 h</td>
+<td align="left">14.4 h</td>
+</tr>
+</tbody></table>
+<p>耗时约为 GPTQ 的 5 倍，但远低于 QAT 所需的数百 GPU 小时。校准数据的选择影响很小：把 WikiText2 换成 C4 或 Pile，PPL 的方差只有 0.0006–0.17；16 条样本已经能收敛，用 128 条是沿用 GPTQ、AWQ 的惯例。</p>
+<h1 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h1><h2 id="仅权重量化"><a href="#仅权重量化" class="headerlink" title="仅权重量化"></a>仅权重量化</h2><p>LLaMA-1-7B，WikiText2 PPL（FP16 为 5.68）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">配置</th>
+<th align="left">RTN</th>
+<th align="left">GPTQ</th>
+<th align="left">AWQ</th>
+<th align="left">OmniQuant</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">W4A16g128</td>
+<td align="left">5.96</td>
+<td align="left">5.85</td>
+<td align="left">5.81</td>
+<td align="left"><strong>5.77</strong></td>
+</tr>
+<tr>
+<td align="left">W4A16</td>
+<td align="left">6.43</td>
+<td align="left">6.13</td>
+<td align="left">6.08</td>
+<td align="left"><strong>5.86</strong></td>
+</tr>
+<tr>
+<td align="left">W3A16g128</td>
+<td align="left">7.01</td>
+<td align="left">6.55</td>
+<td align="left">6.46</td>
+<td align="left"><strong>6.15</strong></td>
+</tr>
+<tr>
+<td align="left">W3A16</td>
+<td align="left">25.73</td>
+<td align="left">8.06</td>
+<td align="left">11.88</td>
+<td align="left"><strong>6.49</strong></td>
+</tr>
+<tr>
+<td align="left">W2A16g64</td>
+<td align="left">188.32</td>
+<td align="left">22.10</td>
+<td align="left">2.5e5</td>
+<td align="left"><strong>8.90</strong></td>
+</tr>
+<tr>
+<td align="left">W2A16g128</td>
+<td align="left">1.9e3</td>
+<td align="left">44.01</td>
+<td align="left">2.6e5</td>
+<td align="left"><strong>9.72</strong></td>
+</tr>
+<tr>
+<td align="left">W2A16</td>
+<td align="left">1.1e5</td>
+<td align="left">2.1e3</td>
+<td align="left">未报告</td>
+<td align="left"><strong>15.47</strong></td>
+</tr>
+</tbody></table>
+<ul>
+<li>4 bit 分组量化时各方法差距在 0.2 以内，OmniQuant 略好。</li>
+<li>比特越低，差距越大。W3A16（按通道）下 OmniQuant 为 6.49，GPTQ 为 8.06，AWQ 为 11.88。</li>
+<li>2 bit 时 RTN 和 AWQ 完全失效，GPTQ 分组后为 22.10–44.01，OmniQuant 分组后为 8.90–9.72。</li>
+<li>模型越大越耐压：W2A16g128 下 LLaMA-1-65B 为 5.95（FP16 为 3.53），LLaMA-2-70B 为 6.55（FP16 为 3.31，GPTQ 在该设置下结果为 NAN）。</li>
+<li>Falcon-180B 用 W3A16g512 量化后，显存从 335 GB 降到 65 GB，单张 A100-80G 即可运行，WikiText2 PPL 从 3.29 升到 3.71（RTN 为 5.33）。</li>
+</ul>
+<h2 id="权重-激活量化"><a href="#权重-激活量化" class="headerlink" title="权重-激活量化"></a>权重-激活量化</h2><p>LLaMA-1 系列，六项零样本任务（PIQA、ARC-e、ARC-c、BoolQ、HellaSwag、Winogrande）的平均准确率（%）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">模型</th>
+<th align="left">FP16</th>
+<th align="left">W6A6 OmniQuant</th>
+<th align="left">W4A4 SmoothQuant</th>
+<th align="left">W4A4 OS+</th>
+<th align="left">W4A4 OmniQuant</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">LLaMA-1-7B</td>
+<td align="left">64.09</td>
+<td align="left">63.17</td>
+<td align="left">38.41</td>
+<td align="left">48.43</td>
+<td align="left"><strong>52.65</strong></td>
+</tr>
+<tr>
+<td align="left">LLaMA-1-13B</td>
+<td align="left">66.33</td>
+<td align="left">64.95</td>
+<td align="left">49.36</td>
+<td align="left">49.86</td>
+<td align="left"><strong>54.37</strong></td>
+</tr>
+<tr>
+<td align="left">LLaMA-1-30B</td>
+<td align="left">67.44</td>
+<td align="left">67.23</td>
+<td align="left">44.83</td>
+<td align="left">52.62</td>
+<td align="left"><strong>56.63</strong></td>
+</tr>
+<tr>
+<td align="left">LLaMA-1-65B</td>
+<td align="left">71.04</td>
+<td align="left">70.28</td>
+<td align="left">47.71</td>
+<td align="left">52.52</td>
+<td align="left"><strong>59.22</strong></td>
+</tr>
+</tbody></table>
+<ul>
+<li>W6A6 下各方法都接近 FP16：OmniQuant 相差 0.2–1.4 个点，SmoothQuant 相差 1.2–2.2 个点。主要差别出现在 W4A4。</li>
+<li>W4A4 下 OmniQuant 比表中最好的基线 OS+ 高 4.0–6.7 个点。在 LLaMA-7B 上，它也超过了 QAT 方法 LLM-QAT（41.27%）和 LLM-QAT + SmoothQuant（46.43%）。</li>
+<li>W4A4 距离 FP16 仍有 10.8–12.0 个点的差距，远未达到无损。</li>
+<li>困惑度上差距更直观：W4A4 下 LLaMA-1-65B 的 WikiText2 PPL，SmoothQuant 为 275.53，OmniQuant 为 9.17（FP16 为 3.53）。</li>
+</ul>
+<h2 id="消融：两个组件各自的作用"><a href="#消融：两个组件各自的作用" class="headerlink" title="消融：两个组件各自的作用"></a>消融：两个组件各自的作用</h2><p>逐个去掉组件后的 WikiText2 PPL：</p>
+<table>
+<thead>
+<tr>
+<th align="left">设置</th>
+<th align="left">LLaMA-13B W4A4</th>
+<th align="left">LLaMA-13B W3A16</th>
+<th align="left">OPT-13B W4A4</th>
+<th align="left">OPT-13B W3A16</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">LWC + LET（完整方法）</td>
+<td align="left"><strong>10.87</strong></td>
+<td align="left"><strong>5.65</strong></td>
+<td align="left"><strong>11.65</strong></td>
+<td align="left"><strong>10.87</strong></td>
+</tr>
+<tr>
+<td align="left">去掉 LWC</td>
+<td align="left">20.75</td>
+<td align="left">7.65</td>
+<td align="left">15.23</td>
+<td align="left">12.98</td>
+</tr>
+<tr>
+<td align="left">去掉 LET</td>
+<td align="left">5.4e3</td>
+<td align="left">5.68</td>
+<td align="left">7.8e3</td>
+<td align="left">11.29</td>
+</tr>
+<tr>
+<td align="left">两者都去掉</td>
+<td align="left">1.8e3</td>
+<td align="left">10.68</td>
+<td align="left">7.8e5</td>
+<td align="left">4.6e3</td>
+</tr>
+</tbody></table>
+<ul>
+<li>W4A4 离不开 LET：去掉后 PPL 升到上千。</li>
+<li>仅权重量化主要靠 LWC。LLaMA-13B W3A16 去掉 LET 只从 5.65 变为 5.68，所以 LLaMA 的仅权重量化默认关闭 LET，以缩短训练时间。OPT 的权重离群值更多，W3A16 下只用 LET 就能把 PPL 从 4.6e3 降到 12.98。</li>
+<li>两者需要联合学习。LLaMA-7B W4A4 上，LET + LWC 的平均 PPL 为 12.87，SmoothQuant + LWC 为 15.80，LET + 网格搜索裁剪为 15.82；同时训练两者也好于交替训练。</li>
+</ul>
+<h2 id="指令微调模型"><a href="#指令微调模型" class="headerlink" title="指令微调模型"></a>指令微调模型</h2><p>论文在 LLaMA-2-Chat 上做 W3A16g128 量化，用 Vicuna-Bench 的 80 个问题让 GPT-4 两两评判（每对按正反顺序各评一次，胜率不计平局）。7B-Chat 上 OmniQuant 对 RTN 的胜率为 80.3%，AWQ 对 RTN 为 69.4%，OmniQuant 与 AWQ 打平（50.0%）。13B-Chat 上 AWQ 不如 RTN（胜率 46.6%），OmniQuant 对 RTN 为 54.4%，对 AWQ 为 56.2%。</p>
+<h2 id="实际部署的速度与显存"><a href="#实际部署的速度与显存" class="headerlink" title="实际部署的速度与显存"></a>实际部署的速度与显存</h2><p>论文用 MLC-LLM 部署仅权重量化模型，在 A100-80G 上生成 512 个 token：</p>
+<table>
+<thead>
+<tr>
+<th align="left">模型</th>
+<th align="left">配置</th>
+<th align="left">权重显存</th>
+<th align="left">运行显存</th>
+<th align="left">速度（token&#x2F;s）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">LLaMA-7B</td>
+<td align="left">全精度</td>
+<td align="left">12.6 GB</td>
+<td align="left">14.4 GB</td>
+<td align="left">69.2</td>
+</tr>
+<tr>
+<td align="left">LLaMA-7B</td>
+<td align="left">W4A16g128</td>
+<td align="left">3.8 GB</td>
+<td align="left">5.7 GB</td>
+<td align="left">134.2</td>
+</tr>
+<tr>
+<td align="left">LLaMA-7B</td>
+<td align="left">W3A16g128</td>
+<td align="left">3.2 GB</td>
+<td align="left">5.1 GB</td>
+<td align="left">83.4</td>
+</tr>
+<tr>
+<td align="left">LLaMA-7B</td>
+<td align="left">W2A16g128</td>
+<td align="left">2.2 GB</td>
+<td align="left">4.1 GB</td>
+<td align="left">83.9</td>
+</tr>
+<tr>
+<td align="left">LLaMA-65B</td>
+<td align="left">全精度</td>
+<td align="left">显存不足（OOM）</td>
+<td align="left">–</td>
+<td align="left">–</td>
+</tr>
+<tr>
+<td align="left">LLaMA-65B</td>
+<td align="left">W4A16g128</td>
+<td align="left">33.0 GB</td>
+<td align="left">41.0 GB</td>
+<td align="left">24.3</td>
+</tr>
+<tr>
+<td align="left">LLaMA-65B</td>
+<td align="left">W3A16g128</td>
+<td align="left">27.0 GB</td>
+<td align="left">35.1 GB</td>
+<td align="left">15.2</td>
+</tr>
+<tr>
+<td align="left">LLaMA-65B</td>
+<td align="left">W2A16g128</td>
+<td align="left">18.0 GB</td>
+<td align="left">25.6 GB</td>
+<td align="left">24.8</td>
+</tr>
+</tbody></table>
+<ul>
+<li>W4A16g128 在 7B 上的速度约为全精度的 1.9 倍（134.2 vs 69.2 token&#x2F;s），权重显存从 12.6 GB 降到 3.8 GB。</li>
+<li>LLaMA-65B 全精度在单张 80G 卡上放不下，W4A16g128 运行只需 41.0 GB。</li>
+<li>MLC-LLM 当时对 INT3、INT2 的支持不够好，W3A16g128 反而比 W4A16g128 慢。</li>
+<li>W6A6、W4A4 缺少现成的硬件支持，论文没有给出实测加速。</li>
+</ul>
+<h1 id="局限与适用场景"><a href="#局限与适用场景" class="headerlink" title="局限与适用场景"></a>局限与适用场景</h1><h2 id="需要注意的局限"><a href="#需要注意的局限" class="headerlink" title="需要注意的局限"></a>需要注意的局限</h2><ul>
+<li><strong>校准耗时更长</strong>：约为 GPTQ 的 5 倍，LLaMA-65B 的 W4A4 量化需要约 14.4 小时。</li>
+<li><strong>2 bit 仍有明显损失</strong>：LLaMA-2-7B W2A16 的 PPL 为 37.37（FP16 为 5.47），分组到 g64 也有 9.62。官方仓库说明 2 bit 模型只是端侧部署的极限探索，效果不如 3 bit。</li>
+<li><strong>W4A4 离无损还远</strong>：平均准确率比 FP16 低 10.8–12.0 个点，且没有实测加速数据。</li>
+<li><strong>加速依赖推理框架的 kernel</strong>：论文的实测只覆盖仅权重量化。官方代码的 –real_quant 基于 AutoGPTQ kernel，README 注明这条路径下仅权重量化只能省显存，推理反而变慢。</li>
+<li><strong>均匀 INT 量化的上限</strong>：与 SpQR、SqueezeLLM 这类混合精度或非均匀量化相比，仅权重量化的精度相当或略差（论文附录 A7）。好处是格式简单，并且同时支持权重-激活量化。</li>
+<li><strong>部分设计是经验取舍</strong>：fc2 不做 LET；SoftMax 输出保持 16 bit。LLaMA-7B W4A4 上把 SoftMax 输出量化到 8 bit 损失很小（平均 PPL 从 12.87 到 12.91），到 4 bit 则升到 18.80。</li>
+</ul>
+<h2 id="什么时候值得用"><a href="#什么时候值得用" class="headerlink" title="什么时候值得用"></a>什么时候值得用</h2><ul>
+<li>目标是 3 bit 及以下的仅权重量化，或 W6A6、W4A4 这类权重-激活量化。论文数据显示，这些设置下 OmniQuant 相对 GPTQ、AWQ、SmoothQuant 的优势最大。</li>
+<li>只做 W4A16g128 时，各方法差距不到 0.1（LLaMA-1-7B：OmniQuant 5.77，AWQ 5.81，GPTQ 5.85），校准更快的 GPTQ、AWQ 通常已经够用。</li>
+<li>OmniQuant 只改变量化过程本身，论文认为它与 QLoRA 这类量化后做参数高效微调的方法互补。</li>
+</ul>
+<h1 id="开源实现与上手"><a href="#开源实现与上手" class="headerlink" title="开源实现与上手"></a>开源实现与上手</h1><p>官方仓库 <a target="_blank" rel="noopener" href="https://github.com/OpenGVLab/OmniQuant">OpenGVLab&#x2F;OmniQuant</a>（MIT 许可）提供：</p>
+<ul>
+<li>OmniQuant 算法，支持 W4A16、W3A16、W2A16 和 W6A6、W4A4。</li>
+<li>预训练的量化参数（LLaMA-1&#x2F;2、LLaMA-2-Chat、OPT、Falcon、Mixtral-8x7B），下载后即可生成量化权重，放在 <a target="_blank" rel="noopener" href="https://huggingface.co/ChenMnZ/OmniQuant">Hugging Face</a>。</li>
+<li>用 MLC-LLM 在 GPU 和手机上运行 W3A16g128 LLaMA-2-Chat（7B&#x2F;13B）的示例 notebook。</li>
+</ul>
+<blockquote>
+<p>💡 以下命令摘自官方 README，以 LLaMA-7B 为例，未在本文环境中实际运行。真实量化（–real_quant）还需要按 README 安装作者修复过的 AutoGPTQ。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 1. 安装</span><br>conda create -n omniquant python=3.10 -y<br>conda activate omniquant<br>git <span class="hljs-built_in">clone</span> https://github.com/OpenGVLab/OmniQuant.git<br><span class="hljs-built_in">cd</span> OmniQuant<br>pip install --upgrade pip<br>pip install -e .<br><br><span class="hljs-comment"># 2. 下载 LET 初始化用的通道缩放和平移（也可用 generate_act_scale_shift.py 自行生成）</span><br>conda install git git-lfs<br>git lfs install<br>git <span class="hljs-built_in">clone</span> https://huggingface.co/ChenMnZ/act_shifts<br>git <span class="hljs-built_in">clone</span> https://huggingface.co/ChenMnZ/act_scales<br><br><span class="hljs-comment"># 3. 仅权重量化：W3A16g128</span><br>CUDA_VISIBLE_DEVICES=0 python main.py \<br>--model /PATH/TO/LLaMA/llama-7b \<br>--epochs 20 --output_dir ./log/llama-7b-w3a16g128 \<br>--eval_ppl --wbits 3 --abits 16 --group_size 128 --lwc<br><br><span class="hljs-comment"># 4. 权重-激活量化：W4A4</span><br>CUDA_VISIBLE_DEVICES=0 python main.py \<br>--model /PATH/TO/LLaMA/llama-7b \<br>--epochs 20 --output_dir ./log/llama-7b-w4a4 \<br>--eval_ppl --wbits 4 --abits 4 --lwc --<span class="hljs-built_in">let</span> \<br>--tasks piqa,arc_easy,arc_challenge,boolq,hellaswag,winogrande<br></code></pre></td></tr></table></figure>
 
-<h2 id="处理节点"><a href="#处理节点" class="headerlink" title="处理节点"></a>处理节点</h2><p>Conv、ConvTranspose、Linear、MatMul、Gemm，对于 MatMul 和 Gemm 算子，需其中一个输入为权重。</p>
-<h2 id="核心逻辑"><a href="#核心逻辑" class="headerlink" title="核心逻辑"></a>核心逻辑</h2><p><img src="/../img/OmniQuant/4.png" srcset="/img/loading.gif" lazyload alt="OmniQuant LWC 核心逻辑流程"></p>
+<p>常用参数：</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>--wbits</code> &#x2F; <code>--abits</code></td>
+<td align="left">权重 &#x2F; 激活的比特数</td>
+</tr>
+<tr>
+<td align="left"><code>--group_size</code></td>
+<td align="left">权重分组大小；不设则按通道量化</td>
+</tr>
+<tr>
+<td align="left"><code>--lwc</code> &#x2F; <code>--let</code></td>
+<td align="left">启用 LWC &#x2F; LET</td>
+</tr>
+<tr>
+<td align="left"><code>--epochs</code></td>
+<td align="left">训练轮数（main.py 默认 10，README 示例用 20）；设为 0 并配合 <code>--resume</code> 可直接评测预训练参数</td>
+</tr>
+<tr>
+<td align="left"><code>--nsamples</code></td>
+<td align="left">校准样本数，默认 128</td>
+</tr>
+<tr>
+<td align="left"><code>--lwc_lr</code> &#x2F; <code>--let_lr</code></td>
+<td align="left">LWC &#x2F; LET 的学习率，main.py 默认分别为 1e-2 和 5e-3，与论文正文写的 5e-3、1e-2 相反，复现时以所用脚本的设置为准</td>
+</tr>
+<tr>
+<td align="left"><code>--resume</code></td>
+<td align="left">加载预训练的 OmniQuant 参数</td>
+</tr>
+<tr>
+<td align="left"><code>--real_quant</code></td>
+<td align="left">真实量化，可以看到显存下降</td>
+</tr>
+<tr>
+<td align="left"><code>--save_dir</code></td>
+<td align="left">保存量化后的模型</td>
+</tr>
+<tr>
+<td align="left"><code>--eval_ppl</code> &#x2F; <code>--tasks</code></td>
+<td align="left">评测困惑度 &#x2F; 零样本任务</td>
+</tr>
+</tbody></table>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2308.13137">OmniQuant 论文（arXiv 2308.13137）</a>，<a target="_blank" rel="noopener" href="https://arxiv.org/html/2308.13137v3">HTML 版（v3）</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/OpenGVLab/OmniQuant">官方代码 OpenGVLab&#x2F;OmniQuant</a>，<a target="_blank" rel="noopener" href="https://huggingface.co/ChenMnZ/OmniQuant">预训练量化参数</a></li>
+<li>对比方法：<a target="_blank" rel="noopener" href="https://github.com/IST-DASLab/gptq">GPTQ</a>、<a target="_blank" rel="noopener" href="https://github.com/mit-han-lab/llm-awq">AWQ</a>、<a target="_blank" rel="noopener" href="https://github.com/mit-han-lab/smoothquant">SmoothQuant</a>、<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2304.09145">Outlier Suppression+</a></li>
+<li>部署框架：<a target="_blank" rel="noopener" href="https://github.com/mlc-ai/mlc-llm">MLC-LLM</a></li>
+<li>同团队的后续工作（据官方 README）：<a target="_blank" rel="noopener" href="https://github.com/OpenGVLab/EfficientQAT">EfficientQAT</a>（2024-07，省时省显存的量化感知训练）、<a target="_blank" rel="noopener" href="https://github.com/ChenMnZ/PrefixQuant">PrefixQuant</a>（2024-10，处理 token 级离群值的权重-激活量化）</li>
+</ul>
 
                 
               </div>
@@ -472,7 +1040,7 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>OmniQuant LWC</div>
+      <div>OmniQuant：用少量可学习参数做低比特大模型量化</div>
       <div>https://jilei-hou.github.io/2026/09/13/OmniQuant/</div>
     </div>
     <div class="license-meta">

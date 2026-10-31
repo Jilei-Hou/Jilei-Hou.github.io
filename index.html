@@ -715,15 +715,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2026/09/12/SmoothQuant/" target="_self">
-          SmoothQuant
+        <a href="/2026/09/12/SmoothQuant%EF%BC%9A%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%E7%9A%84%20W8A8%20%E8%AE%AD%E7%BB%83%E5%90%8E%E9%87%8F%E5%8C%96/" target="_self">
+          SmoothQuant：大语言模型的 W8A8 训练后量化
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2026/09/12/SmoothQuant/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/09/12/SmoothQuant%EF%BC%9A%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%E7%9A%84%20W8A8%20%E8%AE%AD%E7%BB%83%E5%90%8E%E9%87%8F%E5%8C%96/" target="_self">
         <div>
-          背景123论文：https://arxiv.org/pdf/2211.10438代码：https://github.com/mit-han-lab/smoothquantSmoothQuant主要适用于W8A8的场景  SmoothQuant的核心目标是实现 LLMs 的 8 位权重 + 8 位激活值（W8A8）量化。其设计依据是 “模型权重易量化、激活值难量化” ，通过一种数学上等价的转换，在离
+          💡 一句话总结：SmoothQuant 是一种无需训练的训练后量化（PTQ）方法。它用数学等价的逐通道缩放，把激活中离群值造成的量化难度部分转移给权重，使大模型中所有矩阵乘都能用 INT8 权重和 INT8 激活（W8A8）计算。在 OPT-175B、BLOOM-176B、GLM-130B、MT-NLG 530B 以及 Llama、Falcon、Mistral 等模型上精度损失可忽略，推理最高
         </div>
       </a>
 

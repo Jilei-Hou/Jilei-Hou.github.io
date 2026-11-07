@@ -571,9 +571,9 @@
           <div class="post-meta">
             <i class="iconfont icon-tags"></i>
             
-              <a href="/tags/%E7%AE%97%E5%AD%90%E4%BC%98%E5%8C%96/">#算子优化</a>
-            
               <a href="/tags/QAT/">#QAT</a>
+            
+              <a href="/tags/%E7%AE%97%E5%AD%90%E4%BC%98%E5%8C%96/">#算子优化</a>
             
           </div>
         
@@ -651,14 +651,14 @@
       <h2 class="index-header">
         
         <a href="/2026/09/13/AdaRound/" target="_self">
-          AdaRound
+          AdaRound：训练后量化中的自适应取整
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2026/09/13/AdaRound/" target="_self">
         <div>
-          12论文：Up or Down? Adaptive Rounding for Post-Training Quantization链接：https://arxiv.org/abs/2004.10568  概要过往的模型量化研究，核心点都是如何寻一个更优的 scale 值使得量化后的模型精度更高。而高通在论文《Up or Down? Adaptive Rounding for Post-Traini
+          一句话总结： 训练后量化（PTQ）里，把每个权重四舍五入到最近的网格点并不是最优选择。AdaRound 从任务损失的二阶近似出发，把”每个权重向上还是向下取整”变成逐层可用梯度下降求解的小优化问题。它只用少量无标签图片（论文主实验用 2048 张）、不做端到端微调，就把 ResNet18 和 ResNet50 的权重量化到 4 bit，ImageNet 精度损失控制在 1% 以内。  本文适合已
         </div>
       </a>
 
@@ -890,9 +890,9 @@
             
               <a href="/tags/PTQ/">#PTQ</a>
             
-              <a href="/tags/QAT/">#QAT</a>
-            
               <a href="/tags/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/">#模型量化</a>
+            
+              <a href="/tags/QAT/">#QAT</a>
             
           </div>
         

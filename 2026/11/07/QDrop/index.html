@@ -1,0 +1,1003 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Jilei Hou">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="QDrop：随机丢弃量化，把 PTQ 推向 2-bit本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit">
+<meta property="og:type" content="article">
+<meta property="og:title" content="QDrop">
+<meta property="og:url" content="https://jilei-hou.github.io/2026/11/07/QDrop/index.html">
+<meta property="og:site_name" content="455のblog">
+<meta property="og:description" content="QDrop：随机丢弃量化，把 PTQ 推向 2-bit本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jilei-hou.github.io/img/QDrop/fig3.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/QDrop/fig4.png">
+<meta property="article:published_time" content="2026-11-07T06:00:00.000Z">
+<meta property="article:modified_time" content="2026-11-07T05:28:18.175Z">
+<meta property="article:author" content="Jilei Hou">
+<meta property="article:tag" content="量化论文">
+<meta property="article:tag" content="PTQ">
+<meta property="article:tag" content="极低比特">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jilei-hou.github.io/img/QDrop/fig3.png">
+  
+  
+  
+  <title>QDrop - 455のblog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/KaTeX/0.16.2/katex.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"jilei-hou.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>455のblog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="QDrop"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-11-07 14:00" pubdate>
+          2026年11月7日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          45 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">QDrop</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="QDrop：随机丢弃量化，把-PTQ-推向-2-bit"><a href="#QDrop：随机丢弃量化，把-PTQ-推向-2-bit" class="headerlink" title="QDrop：随机丢弃量化，把 PTQ 推向 2-bit"></a>QDrop：随机丢弃量化，把 PTQ 推向 2-bit</h1><p>本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit 权重 + 2-bit 激活，写作 W2A2）下的失效与解决方案。</p>
+<blockquote>
+<p><strong>QDrop 一句话结论：</strong> 在 PTQ 的逐块重建阶段，随机丢弃激活量化（默认丢弃概率 p &#x3D; 0.5），让优化后的低比特权重在损失面上更平坦；由此把 PTQ 的可行下限从 4-bit 推进到 2-bit 激活，在 ImageNet W2A2 上相比 Brecq† 可提升约 12~51 个百分点。</p>
+</blockquote>
+<h2 id="论文速览"><a href="#论文速览" class="headerlink" title="论文速览"></a>论文速览</h2><p>PTQ 指预训练模型离线完成量化、无需端到端微调，只用少量校准数据重建量化模型。AdaRound、Brecq 等方法通过 Taylor 展开把量化视为权重扰动来学习取整，在 4-bit 上有效，甚至把权重推到 2-bit。QDrop 进一步指出：激活量化也应进入重建，且部分引入优于全引入。</p>
+<ul>
+<li>论文：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2203.05740">arXiv:2203.05740</a>，Wei、Gong、Li、Liu、Yu 等人，ICLR 2022 论文。</li>
+<li>方法：QDrop，在 PTQ 重建中随机丢弃激活量化。</li>
+<li>核心结论：PTQ 首次可达 2-bit 激活；ImageNet W2A2 上相比 Brecq†，准确率最高提升 51.49 个百分点。</li>
+</ul>
+<h2 id="PTQ-为什么难做到极低比特"><a href="#PTQ-为什么难做到极低比特" class="headerlink" title="PTQ 为什么难做到极低比特"></a>PTQ 为什么难做到极低比特</h2><p>量化把权重和激活压缩到固定点，用于边缘设备。研究者通常把量化分为感知训练（QAT）和后训练量化（PTQ）。PTQ 只用校准数据重建，成本低；但极低比特激活量化仍难做到高准确率。</p>
+<p>以 AdaRound、Brecq 为代表的方法看，它们把量化视为权重扰动 Δw，用 Taylor 展开学习取整，再通过重建层或 block 输出逼近全精度输出。这类方法在 4-bit 上有效，甚至把权重推到 2-bit。但它们只建模权重扰动，忽略了激活量化，因此极低比特激活下”同一个优化后的权重”不随激活位宽变化，显然反直觉，也导致结果欠佳。</p>
+<blockquote>
+<p>the same optimized model no matter which bit the activations use, which is obviously counter-intuitive and thus causes a sub-optimal solution.</p>
+</blockquote>
+<h2 id="关键实验：三种激活量化引入方式"><a href="#关键实验：三种激活量化引入方式" class="headerlink" title="关键实验：三种激活量化引入方式"></a>关键实验：三种激活量化引入方式</h2><p>作者在 Brecq 开源代码基础上，对重建第 k 个 block 输出时三种激活量化处理方式做了对比实验（ImageNet，1024 张校准图）。下表给出 ResNet-18、W2A2、常规首尾层 8-bit 设置下的 Top-1 准确率（%）；其中 Case 2 的 45.77 取自附录 Table 8（正文 Table 1 为 45.74），QDrop 取默认 p &#x3D; 0.5。</p>
+<pre><code class=" mermaid">flowchart TD
+    c1[&quot;Case 1\n重建时激活全程 FP32，只量化权重&quot;] --&gt; c1o[&quot;准确率很低&quot;]
+    c2[&quot;Case 2\n激活全量量化，一起参与重建&quot;] --&gt; c2o[&quot;准确率中等&quot;]
+    c3[&quot;Case 3\n前 k-1 个 block 量化，当前 block 不量化&quot;] --&gt; c3o[&quot;准确率较高&quot;]
+    q[&quot;QDrop\n元素级随机丢弃激活量化，p 默认 0.5&quot;] --&gt; qo[&quot;准确率最高&quot;]
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>设置</th>
+<th>说明</th>
+<th>Top-1 准确率（%）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Case 1</td>
+<td>重建时激活全程 FP32，只量化权重</td>
+<td>18.88</td>
+</tr>
+<tr>
+<td>Case 2</td>
+<td>激活量化全量引入重建</td>
+<td>45.77</td>
+</tr>
+<tr>
+<td>Case 3</td>
+<td>部分引入：当前 block 不量化激活</td>
+<td>48.07</td>
+</tr>
+<tr>
+<td>QDrop（p &#x3D; 0.5）</td>
+<td>元素级随机丢弃激活量化</td>
+<td>51.14</td>
+</tr>
+</tbody></table>
+<p>作者给出的两个观察结论：一是极低比特 PTQ 中，引入激活量化（Case 2）比全程 FP32 重建（Case 1）大幅提升效果；二是部分引入激活量化（Case 3）优于全量引入（Case 2）。</p>
+<h2 id="理论：为什么随机丢弃能提升低比特准确率"><a href="#理论：为什么随机丢弃能提升低比特准确率" class="headerlink" title="理论：为什么随机丢弃能提升低比特准确率"></a>理论：为什么随机丢弃能提升低比特准确率</h2><p>作者把激活量化看作注入噪声。传统写法是加法噪声 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>e</mi><mo>=</mo><mover accent="true"><mi>a</mi><mo>^</mo></mover><mo>−</mo><mi>a</mi></mrow><annotation encoding="application/x-tex">e = \hat{a} - a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">a</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span>；为了去掉激活取值范围对噪声幅度的影响，论文把它改写成乘性形式：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mover accent="true"><mi>a</mi><mo>^</mo></mover><mo>=</mo><mi>a</mi><mo>⋅</mo><mo stretchy="false">(</mo><mn>1</mn><mo>+</mo><mi>u</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><mspace width="2em"><mi>u</mi><mo>=</mo><mfrac><mover accent="true"><mi>a</mi><mo>^</mo></mover><mi>a</mi></mfrac><mo>−</mo><mn>1</mn></mspace></mrow><annotation encoding="application/x-tex">\hat{a} = a \cdot (1 + u), \qquad u = \frac{\hat{a}}{a} - 1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">a</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.4445em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">u</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:2em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">u</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0574em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3714em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">a</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">a</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></span></p>
+<p>这样 u 的范围只由位宽和舍入误差决定。于是 PTQ 的目标从”只考虑权重扰动”变成同时考虑权重和激活噪声，对应论文式 (4)：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><munder><mrow><mi>min</mi><mo>⁡</mo></mrow><mover accent="true"><mi>w</mi><mo>^</mo></mover></munder><mtext>  </mtext><msub><mi mathvariant="double-struck">E</mi><mrow><mi>x</mi><mo>∼</mo><msub><mi mathvariant="script">D</mi><mi>c</mi></msub></mrow></msub><mrow><mo fence="true">[</mo><mi>L</mi><mo stretchy="false">(</mo><mi>w</mi><mo>+</mo><mi mathvariant="normal">Δ</mi><mi>w</mi><mo separator="true">,</mo><mi>x</mi><mo separator="true">,</mo><mn>1</mn><mo>+</mo><mi>u</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo>−</mo><mi>L</mi><mo stretchy="false">(</mo><mi>w</mi><mo separator="true">,</mo><mi>x</mi><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">)</mo><mo fence="true">]</mo></mrow></mrow><annotation encoding="application/x-tex">\min_{\hat{w}} \; \mathbb{E}_{x \sim \mathcal{D}_c}\left[ L(w + \Delta w, x, 1 + u(x)) - L(w, x, 1) \right]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.5021em;vertical-align:-0.7521em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6679em;"><span style="top:-2.3479em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord katex-accent mtight"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-2.7em;"><span class="pstrut" style="height:2.7em;"></span><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span><span style="top:-2.7em;"><span class="pstrut" style="height:2.7em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord mtight">^</span></span></span></span></span></span></span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">min</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7521em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbb">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">x</span><span class="mrel mtight">∼</span><span class="mord mtight"><span class="mord mathcal mtight" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1645em;"><span style="top:-2.357em;margin-left:-0.0278em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight">c</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2501em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">[</span><span class="mord mathnormal">L</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">u</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">))</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">L</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">)</span><span class="mclose delimcenter" style="top:0em;">]</span></span></span></span></span></span></p>
+<p>借助 Lemma 1，激活噪声可以等价吸收为权重扰动 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>v</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">v(x)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span></span></span></span>（论文在附录 B.1&#x2F;B.2 中分别对全连接层与卷积层给出证明）；把这一等价关系代入式 (4)，损失变化可拆成两项，即 Theorem 1 的式 (7)：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="double-struck">E</mi><mrow><mo fence="true">[</mo><munder><munder><mrow><mi>L</mi><mo stretchy="false">(</mo><mover accent="true"><mi>w</mi><mo>^</mo></mover><mo separator="true">,</mo><mi>x</mi><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">)</mo><mo>−</mo><mi>L</mi><mo stretchy="false">(</mo><mi>w</mi><mo separator="true">,</mo><mi>x</mi><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><mo stretchy="true">⏟</mo></munder><mrow><mo stretchy="false">(</mo><mn>7</mn><mtext>-</mtext><mn>1</mn><mo stretchy="false">)</mo></mrow></munder><mo>+</mo><munder><munder><mrow><mi>L</mi><mo stretchy="false">(</mo><mover accent="true"><mi>w</mi><mo>^</mo></mover><mo>⊙</mo><mo stretchy="false">(</mo><mn>1</mn><mo>+</mo><mi>v</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo separator="true">,</mo><mi>x</mi><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">)</mo><mo>−</mo><mi>L</mi><mo stretchy="false">(</mo><mover accent="true"><mi>w</mi><mo>^</mo></mover><mo separator="true">,</mo><mi>x</mi><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><mo stretchy="true">⏟</mo></munder><mrow><mo stretchy="false">(</mo><mn>7</mn><mtext>-</mtext><mn>2</mn><mo stretchy="false">)</mo></mrow></munder><mo fence="true">]</mo></mrow></mrow><annotation encoding="application/x-tex">\mathbb{E}\left[ \underbrace{L(\hat{w}, x, 1) - L(w, x, 1)}_{(7\text{-}1)} + \underbrace{L(\hat{w} \odot (1 + v(x)), x, 1) - L(\hat{w}, x, 1)}_{(7\text{-}2)} \right]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:4.2em;vertical-align:-1.85em;"></span><span class="mord mathbb">E</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.35em;"><span style="top:-4.35em;"><span class="pstrut" style="height:6.2em;"></span><span style="width:0.667em;height:4.2em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.667em" height="4.2em" viewbox="0 0 667 4200"><path d="M403 1759 V84 H666 V0 H319 V1759 v600 v1759 v84 h347 v-84
+H403z M403 1759 V0 H319 V1759 v600 v1759 v84 h84z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.85em;"><span></span></span></span></span></span></span><span class="minner munder"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.75em;"><span style="top:-1.377em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mtight">7</span><span class="mord text mtight"><span class="mord mtight">-</span></span><span class="mord mtight">1</span><span class="mclose mtight">)</span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="minner munder"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.75em;"><span class="svg-align" style="top:-2.102em;"><span class="pstrut" style="height:3em;"></span><span class="katex-stretchy" style="height:0.548em;min-width:1.6em;"><span class="brace-left" style="height:0.548em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="0.548em" viewbox="0 0 400000 548" preserveaspectratio="xMinYMin slice"><path d="M0 6l6-6h17c12.688 0 19.313.3 20 1 4 4 7.313 8.3 10 13
+ 35.313 51.3 80.813 93.8 136.5 127.5 55.688 33.7 117.188 55.8 184.5 66.5.688
+ 0 2 .3 4 1 18.688 2.7 76 4.3 172 5h399450v120H429l-6-1c-124.688-8-235-61.7
+-331-161C60.687 138.7 32.312 99.3 7 54L0 41V6z"/></svg></span><span class="brace-center" style="height:0.548em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="0.548em" viewbox="0 0 400000 548" preserveaspectratio="xMidYMin slice"><path d="M199572 214
+c100.7 8.3 195.3 44 280 108 55.3 42 101.7 93 139 153l9 14c2.7-4 5.7-8.7 9-14
+ 53.3-86.7 123.7-153 211-199 66.7-36 137.3-56.3 212-62h199568v120H200432c-178.3
+ 11.7-311.7 78.3-403 201-6 8-9.7 12-11 12-.7.7-6.7 1-18 1s-17.3-.3-18-1c-1.3 0
+-5-4-11-12-44.7-59.3-101.3-106.3-170-141s-145.3-54.3-229-60H0V214z"/></svg></span><span class="brace-right" style="height:0.548em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="0.548em" viewbox="0 0 400000 548" preserveaspectratio="xMaxYMin slice"><path d="M399994 0l6 6v35l-6 11c-56 104-135.3 181.3-238 232-57.3
+ 28.7-117 45-179 50H-300V214h399897c43.3-7 81-15 113-26 100.7-33 179.7-91 237
+-174 2.7-5 6-9 10-13 .7-1 7.3-1 20-1h17z"/></svg></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">L</span><span class="mopen">(</span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">L</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.898em;"><span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.798em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="minner munder"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.75em;"><span style="top:-1.377em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mtight">7</span><span class="mord text mtight"><span class="mord mtight">-</span></span><span class="mord mtight">2</span><span class="mclose mtight">)</span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="minner munder"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.75em;"><span class="svg-align" style="top:-2.102em;"><span class="pstrut" style="height:3em;"></span><span class="katex-stretchy" style="height:0.548em;min-width:1.6em;"><span class="brace-left" style="height:0.548em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="0.548em" viewbox="0 0 400000 548" preserveaspectratio="xMinYMin slice"><path d="M0 6l6-6h17c12.688 0 19.313.3 20 1 4 4 7.313 8.3 10 13
+ 35.313 51.3 80.813 93.8 136.5 127.5 55.688 33.7 117.188 55.8 184.5 66.5.688
+ 0 2 .3 4 1 18.688 2.7 76 4.3 172 5h399450v120H429l-6-1c-124.688-8-235-61.7
+-331-161C60.687 138.7 32.312 99.3 7 54L0 41V6z"/></svg></span><span class="brace-center" style="height:0.548em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="0.548em" viewbox="0 0 400000 548" preserveaspectratio="xMidYMin slice"><path d="M199572 214
+c100.7 8.3 195.3 44 280 108 55.3 42 101.7 93 139 153l9 14c2.7-4 5.7-8.7 9-14
+ 53.3-86.7 123.7-153 211-199 66.7-36 137.3-56.3 212-62h199568v120H200432c-178.3
+ 11.7-311.7 78.3-403 201-6 8-9.7 12-11 12-.7.7-6.7 1-18 1s-17.3-.3-18-1c-1.3 0
+-5-4-11-12-44.7-59.3-101.3-106.3-170-141s-145.3-54.3-229-60H0V214z"/></svg></span><span class="brace-right" style="height:0.548em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="0.548em" viewbox="0 0 400000 548" preserveaspectratio="xMaxYMin slice"><path d="M399994 0l6 6v35l-6 11c-56 104-135.3 181.3-238 232-57.3
+ 28.7-117 45-179 50H-300V214h399897c43.3-7 81-15 113-26 100.7-33 179.7-91 237
+-174 2.7-5 6-9 10-13 .7-1 7.3-1 20-1h17z"/></svg></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">L</span><span class="mopen">(</span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊙</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mopen">(</span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">))</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">L</span><span class="mopen">(</span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.898em;"><span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.798em;"><span></span></span></span></span></span><span class="mclose"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.35em;"><span style="top:-4.35em;"><span class="pstrut" style="height:6.2em;"></span><span style="width:0.667em;height:4.2em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.667em" height="4.2em" viewbox="0 0 667 4200"><path d="M347 1759 V0 H0 V84 H263 V1759 v600 v1759 H0 v84 H347z
+M347 1759 V0 H263 V1759 v600 v1759 h84z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.85em;"><span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>（7-1）是 AdaRound、Brecq 已经在优化的权重量化项；（7-2）是引入激活量化后多出来的损失变化，衡量模型在扰动 v(x) 下是否”平坦”：同样的扰动幅度，损失变化越小越平坦。</p>
+<p>Corollary 1 进一步指出：在校准数据上引入激活量化噪声后，存在对应的权重扰动 v(x)，使优化后的量化模型更平坦。这解释了 Case 2&#x2F;3 为什么优于 Case 1；但只在校准集上平坦可能过拟合，全量引入（Case 2）在测试集上反而不如部分引入（Case 3）。</p>
+<h2 id="QDrop-方法"><a href="#QDrop-方法" class="headerlink" title="QDrop 方法"></a>QDrop 方法</h2><p>QDrop 的思路：既然平坦性依赖数据分布与扰动方向，需要在更多方向上追求平坦；于是提出 QDrop，在 PTQ 重建中随机丢弃激活量化。定义（式 9）：以概率 p 丢弃量化（换回 FP32），以概率 1 - p 保留量化，默认 p &#x3D; 0.5。</p>
+<p>前面说的”随机丢弃”，用论文式 (9) 写出来是：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>QDrop:</mtext><mspace width="1em"><mi>u</mi><mo>=</mo><mrow><mo fence="true">{</mo><mtable rowspacing="0.36em" columnalign="left left" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mn>0</mn><mo separator="true">,</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mtext>with probability </mtext><mi>p</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mover accent="true"><mi>a</mi><mo>^</mo></mover><mi mathvariant="normal">/</mi><mi>a</mi><mo>−</mo><mn>1</mn><mo separator="true">,</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mtext>with probability </mtext><mn>1</mn><mo>−</mo><mi>p</mi></mrow></mstyle></mtd></mtr></mtable></mrow></mspace></mrow><annotation encoding="application/x-tex">\text{QDrop:}\quad u = \begin{cases} 0, &amp; \text{with probability } p \\ \hat{a}/a - 1, &amp; \text{with probability } 1 - p \end{cases}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">QDrop:</span></span><span class="mspace" style="margin-right:1em;"></span><span class="mord mathnormal">u</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:3em;vertical-align:-1.25em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size4">{</span></span><span class="mord"><span class="mtable"><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.69em;"><span style="top:-3.69em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord">0</span><span class="mpunct">,</span></span></span><span style="top:-2.25em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">a</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span><span class="mord">/</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span><span class="mpunct">,</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.19em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:1em;"></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.69em;"><span style="top:-3.69em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord">with probability </span></span><span class="mord mathnormal">p</span></span></span><span style="top:-2.25em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord">with probability </span></span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">p</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.19em;"><span></span></span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p>也就是说，每个激活元素每次前向都有 p 的概率”绕过”量化（u &#x3D; 0，用 FP32 值），否则走量化值；p &#x3D; 0.5 时两种状态各占一半，熵最大，能覆盖更多扰动方向。</p>
+<ol>
+<li>前向传播：对当前 block 输入与块内激活，按元素随机以概率 p 丢弃量化，换回全精度值。</li>
+<li>反向传播：用重建输出与 FP32 块输出之差计算重建误差，对权重取整与激活步长做联合梯度下降。</li>
+<li>完成后关闭丢弃，进入下一 block；推理时恢复为纯量化模型，无额外开销。</li>
+</ol>
+<p>QDrop 是三种 Case 的统一归纳：p &#x3D; 1 时退化为 Case 1（激活全程 FP32、只量化权重）；p &#x3D; 0 时退化为 Case 2（激活全量量化）；前 k-1 个 block 以 p &#x3D; 0（保留量化）、当前 block 以 p &#x3D; 1（丢弃量化），即 Case 3。QDrop 是对 Case 3 的 element-wise 细粒化，无需再手动选择 Case。下图给出 QDrop、Case 1 与 Case 3 在测试数据上的损失曲面：QDrop 的曲面明显更平滑，说明它在更多扰动方向上保持平坦。</p>
+<p><img src="/../img/QDrop/fig3.png" srcset="/img/loading.gif" lazyload alt="Figure 3：QDrop、Case 1、Case 3 的量化权重损失曲面（ResNet-18 W3A3）"></p>
+<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><p>在 ImageNet 分类实验中，QDrop† 相比 Brecq† 在 W2A2（2-bit 权重 + 2-bit 激活）上分别提升 12.18、29.66、51.49 个百分点（ResNet-18 &#x2F; ResNet-50 &#x2F; RegNet-3.2GF）。MobileNetV2 在 W3A3（3-bit 权重 + 3-bit 激活）上，QDrop† 可达 57.98%，而 Brecq† 为 23.41%。† 表示采用 Brecq 的首尾层设置：在常规首尾层 8-bit 的基础上，额外保留首层输出为 8-bit。下表汇总论文 Table 3 中 W2A2 与 W3A3 的关键结果（Top-1 准确率，%）。</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>Full Prec.</th>
+<th>Brecq† W2A2</th>
+<th>QDrop† W2A2</th>
+<th>Brecq† W3A3</th>
+<th>QDrop† W3A3</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ResNet-18</td>
+<td>71.06</td>
+<td>42.54</td>
+<td>54.72</td>
+<td>65.87</td>
+<td>66.75</td>
+</tr>
+<tr>
+<td>ResNet-50</td>
+<td>77.00</td>
+<td>29.01</td>
+<td>58.67</td>
+<td>68.96</td>
+<td>72.38</td>
+</tr>
+<tr>
+<td>MobileNetV2</td>
+<td>72.49</td>
+<td>0.24</td>
+<td>13.05</td>
+<td>23.41</td>
+<td>57.98</td>
+</tr>
+<tr>
+<td>RegNet-3.2GF</td>
+<td>78.36</td>
+<td>3.62</td>
+<td>55.11</td>
+<td>57.12</td>
+<td>72.51</td>
+</tr>
+<tr>
+<td>MNasNet-2.0</td>
+<td>76.68</td>
+<td>0.61</td>
+<td>28.77</td>
+<td>49.78</td>
+<td>66.81</td>
+</tr>
+</tbody></table>
+<p>图 4 是对丢弃概率的消融：在 MobileNetV2 与 RegNet-600MF 上，p 从 0 增到 1，0.5 附近整体表现最好。</p>
+<p><img src="/../img/QDrop/fig4.png" srcset="/img/loading.gif" lazyload alt="图 4：丢弃概率对 ImageNet 实验的影响（MobileNetV2 与 RegNet-600MF）"></p>
+<p>扩展到其他任务：在 MS COCO 目标检测中，W4A4 下 Faster RCNN 的 mAP 接近全精度（差距约 1.2~2.6 个百分点）；RetinaNet 的 MobileNetV2 骨干网络相比 Brecq† 带来约 4.9 个百分点的 mAP 提升；W2A4 下提升更明显，RetinaNet 的 MobileNetV2 相比 Brecq† 最高约 +6.5 mAP。在 GLUE 与 SQuAD 的 BERT 任务（E8W4A4：embedding 8-bit，权重与激活 4-bit）中，QDrop 对比常规 PTQ（No Drop）提升显著，QNLI 约 +8.7、QQP 约 +4.6、RTE 约 +7.2 个百分点。</p>
+<h2 id="落地要点"><a href="#落地要点" class="headerlink" title="落地要点"></a>落地要点</h2><ul>
+<li>重建迭代：每个 block 或 layer 输出重建 20k 次。</li>
+<li>校准数据：ImageNet 1024 张、COCO 256 张、NLP 1024 个样本。</li>
+<li>量化配置：视觉任务首尾层保持 8-bit；NLP 任务 embedding 为 8-bit；权重按通道量化。</li>
+</ul>
+<p><strong>“随机丢弃”的实现细节：</strong> QDrop 不改变量化图结构，只在训练期给每个激活量化器加一个逐元素的伯努利掩码，核心只有一行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs python">x_orig = x                                  <span class="hljs-comment"># FP32 激活</span><br>mask = torch.rand_like(x) &lt; drop_prob       <span class="hljs-comment"># 与激活同形状的随机掩码</span><br>x = torch.where(mask, x_quantized, x_orig)  <span class="hljs-comment"># 逐元素在量化值与 FP32 之间选择</span><br></code></pre></td></tr></table></figure>
+
+<p>两个位置会用到这个掩码：一是 block 输入，用 FP32 输入与量化输入按元素随机混合；二是 block 内部每个激活量化器的输出，同样按元素与 FP32 激活混合（见 recon.py 的 reconstruction 循环）。每个 block 重建完成后关闭丢弃，该 block 以全量化形式参与后续 block 的重建；推理阶段没有随机性，部署的就是普通量化模型。</p>
+<p>注意代码里的 drop_prob 与论文的 p 互为补数：drop_prob 表示保留量化的比例；QDrop 取 p &#x3D; 0.5，此时两者取值相同。额外开销只发生在校准阶段：需要同时缓存 FP32 与量化后的激活，并生成同形状掩码，前向计算量与原 PTQ 重建基本相同。</p>
+<h2 id="局限与讨论"><a href="#局限与讨论" class="headerlink" title="局限与讨论"></a>局限与讨论</h2><ul>
+<li>极低比特（W2A2）下，轻量网络的准确率仍明显偏低：MobileNetV2 仅 13.05%、MNasNet 28.77%（QDrop†，ImageNet Top-1）。</li>
+<li>理论依据部分基于一阶泰勒展开与 Lemma 1 的近似；平坦度证据主要来自 ResNet-18 W3A3 的损失曲面、sharpness 测量与 Hessian 统计。</li>
+<li>丢弃概率 p &#x3D; 0.5 来自最大熵假设与少量消融；不同架构可能存在更优取值。</li>
+<li>方法间的结论受实验设置差异影响（如 AdaQuant 的量化节点插入方式、Brecq 的 † 首尾层设置）。</li>
+</ul>
+<h2 id="参考资源"><a href="#参考资源" class="headerlink" title="参考资源"></a>参考资源</h2><ul>
+<li>论文：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2203.05740">arXiv:2203.05740</a></li>
+<li>官方代码：<a target="_blank" rel="noopener" href="https://github.com/wimh966/QDrop">github.com&#x2F;wimh966&#x2F;QDrop</a></li>
+<li>基准框架：<a target="_blank" rel="noopener" href="https://github.com/ModelTC/MQBench">github.com&#x2F;ModelTC&#x2F;MQBench</a></li>
+<li>AdaRound：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2004.10568">arXiv:2004.10568</a></li>
+<li>Brecq：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2102.05426">arXiv:2102.05426</a></li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="category-chain-item">模型量化</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%87%8F%E5%8C%96%E8%AE%BA%E6%96%87/" class="print-no-link">#量化论文</a>
+      
+        <a href="/tags/PTQ/" class="print-no-link">#PTQ</a>
+      
+        <a href="/tags/%E6%9E%81%E4%BD%8E%E6%AF%94%E7%89%B9/" class="print-no-link">#极低比特</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>QDrop</div>
+      <div>https://jilei-hou.github.io/2026/11/07/QDrop/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Jilei Hou</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年11月7日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/11/07/FlexRound/" title="FlexRound">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">FlexRound</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/11/07/BRECQ/" title="BRECQ：用块重建推进后训练量化到 INT2">
+                        <span class="hidden-mobile">BRECQ：用块重建推进后训练量化到 INT2</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

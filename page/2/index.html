@@ -333,6 +333,134 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
+        <a href="/2026/09/13/OmniQuant/" target="_self">
+          OmniQuant：用少量可学习参数做低比特大模型量化
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/09/13/OmniQuant/" target="_self">
+        <div>
+          📌 一句话总结：OmniQuant 冻结大模型的原始权重，只学习两类量化参数：权重的裁剪强度（LWC），以及把激活量化难度转移到权重上的等价变换系数（LET）。它按 Transformer block 逐块做梯度优化，成本仍是 PTQ 级别（128 条校准样本，单张 A100 上 1–16 小时），在 W2A16、W3A16、W4A4 等低比特设置下明显好于 GPTQ、AWQ、SmoothQu
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-09-13 17:30" pubdate>
+              2026-09-13
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="category-chain-item">模型量化</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/%E9%87%8F%E5%8C%96%E8%AE%BA%E6%96%87/">#量化论文</a>
+            
+              <a href="/tags/PTQ/">#PTQ</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/09/13/AdaRound/" target="_self">
+          AdaRound：训练后量化中的自适应取整
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/09/13/AdaRound/" target="_self">
+        <div>
+          一句话总结： 训练后量化（PTQ）里，把每个权重四舍五入到最近的网格点并不是最优选择。AdaRound 从任务损失的二阶近似出发，把”每个权重向上还是向下取整”变成逐层可用梯度下降求解的小优化问题。它只用少量无标签图片（论文主实验用 2048 张）、不做端到端微调，就把 ResNet18 和 ResNet50 的权重量化到 4 bit，ImageNet 精度损失控制在 1% 以内。  本文适合已
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-09-13 16:08" pubdate>
+              2026-09-13
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="category-chain-item">模型量化</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/%E9%87%8F%E5%8C%96%E8%AE%BA%E6%96%87/">#量化论文</a>
+            
+              <a href="/tags/PTQ/">#PTQ</a>
+            
+              <a href="/tags/%E9%AB%98%E9%80%9A/">#高通</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
         <a href="/2026/09/13/AWQ/" target="_self">
           AWQ：面向端侧 LLM 压缩与加速的激活感知权重量化
         </a>

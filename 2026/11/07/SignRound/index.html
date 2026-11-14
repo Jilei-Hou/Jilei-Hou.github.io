@@ -1,0 +1,1229 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Jilei Hou">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="一句话看懂： SignRound 是一种训练后量化（PTQ）方法。它不改动原始权重，只为每个权重学习一个取整偏移 V，并为截断范围学习两个系数 α、β；以 Transformer block 的输出误差为目标，用符号梯度下降（SignSGD）每个 block 只调 200 步。量化完成后模型仍是普通的整数权重加量化参数，推理没有额外开销。 效果： 在 W2G128（2-bit 权重、每 128">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SignRound">
+<meta property="og:url" content="https://jilei-hou.github.io/2026/11/07/SignRound/index.html">
+<meta property="og:site_name" content="455のblog">
+<meta property="og:description" content="一句话看懂： SignRound 是一种训练后量化（PTQ）方法。它不改动原始权重，只为每个权重学习一个取整偏移 V，并为截断范围学习两个系数 α、β；以 Transformer block 的输出误差为目标，用符号梯度下降（SignSGD）每个 block 只调 200 步。量化完成后模型仍是普通的整数权重加量化参数，推理没有额外开销。 效果： 在 W2G128（2-bit 权重、每 128">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jilei-hou.github.io/img/SignRound/fig1.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/SignRound/loop.jpg">
+<meta property="article:published_time" content="2026-11-07T07:30:00.000Z">
+<meta property="article:modified_time" content="2026-11-14T08:57:24.640Z">
+<meta property="article:author" content="Jilei Hou">
+<meta property="article:tag" content="量化论文">
+<meta property="article:tag" content="PTQ">
+<meta property="article:tag" content="LLM量化">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jilei-hou.github.io/img/SignRound/fig1.png">
+  
+  
+  
+  <title>SignRound - 455のblog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/KaTeX/0.16.2/katex.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"jilei-hou.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>455のblog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SignRound"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-11-07 15:30" pubdate>
+          2026年11月7日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          67 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SignRound</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <blockquote>
+<p><strong>一句话看懂：</strong> SignRound 是一种训练后量化（PTQ）方法。它不改动原始权重，只为每个权重学习一个取整偏移 V，并为截断范围学习两个系数 α、β；以 Transformer block 的输出误差为目标，用符号梯度下降（SignSGD）每个 block 只调 200 步。量化完成后模型仍是普通的整数权重加量化参数，推理没有额外开销。</p>
+<p><strong>效果：</strong> 在 W2G128（2-bit 权重、每 128 个权重共享一组量化参数）下，Mistral-7B 和 LLaMA-V2 系列在 11 个零样本任务上的平均准确率比 RTN、GPTQ、AWQ、HQQ、OmniQuant 高 6.91～33.22 个百分点；4-bit 在多数模型上接近无损。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>论文</td>
+<td>Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs</td>
+</tr>
+<tr>
+<td>作者</td>
+<td>Wenhua Cheng、Weiwei Zhang、Haihao Shen、Yiyang Cai、Xin He、Kaokao Lv、Yi Liu（Intel）</td>
+</tr>
+<tr>
+<td>发表</td>
+<td>EMNLP 2024 Findings；arXiv 首版 2023-09-11，本文依据 v5（2024-10-08）</td>
+</tr>
+<tr>
+<td>方向</td>
+<td>大模型训练后量化中的仅权重量化（weight-only quantization）</td>
+</tr>
+<tr>
+<td>适合读者</td>
+<td>了解 scale、zero point、分组量化等基本概念，想评估低比特量化方案的算法或推理工程同学</td>
+</tr>
+<tr>
+<td>链接</td>
+<td><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.05516">arXiv:2309.05516</a>｜<a target="_blank" rel="noopener" href="https://github.com/intel/auto-round">代码：intel&#x2F;auto-round</a></td>
+</tr>
+</tbody></table>
+<h1 id="论文要解决什么问题"><a href="#论文要解决什么问题" class="headerlink" title="论文要解决什么问题"></a>论文要解决什么问题</h1><p>大模型部署的主要障碍之一是显存和存储占用。生成 token 时，速度往往受限于显存带宽而不是算力；激活量化本身难度又更大。因此只压缩权重、激活保持 16 位的仅权重量化，是更务实的选择。</p>
+<p>现有量化路线各有短板，SignRound 想取两者之长：</p>
+<table>
+<thead>
+<tr>
+<th>路线</th>
+<th>做法</th>
+<th>优点</th>
+<th>代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>量化感知训练（QAT）</td>
+<td>训练时模拟低精度，让模型适应量化误差</td>
+<td>准确率通常更高</td>
+<td>训练复杂、耗时长、要调超参，用在 LLM 上资源消耗大</td>
+</tr>
+<tr>
+<td>训练后量化（PTQ）</td>
+<td>直接量化训练好的模型，最多使用少量校准数据</td>
+<td>简单、成本低</td>
+<td>低比特下准确率下降明显</td>
+</tr>
+<tr>
+<td><strong>SignRound</strong></td>
+<td>在 PTQ 框架内轻量调优：逐 block 用少量校准数据调 200 步，只学习舍入和截断参数</td>
+<td>作者定位为兼顾 QAT 的准确率与 PTQ 的成本</td>
+<td>需要校准数据和反向传播，比免校准方法慢</td>
+</tr>
+</tbody></table>
+<p>论文的切入点是<strong>舍入（rounding）</strong>。最常用的就近取整（RTN）对每个权重独立四舍五入，忽略了权重之间、权重与激活之间的相关性。AdaRound 曾把舍入建模为二次无约束二值优化，并用二阶泰勒展开近似损失；但取整结果还要乘上量化 scale，权重变化可能不小，只保留二阶项未必准确。FlexRound 更灵活，但需要针对每个模型和任务调专门的超参，难以扩展到 LLM。</p>
+<h1 id="方法：只学三类参数，用梯度符号去调"><a href="#方法：只学三类参数，用梯度符号去调" class="headerlink" title="方法：只学三类参数，用梯度符号去调"></a>方法：只学三类参数，用梯度符号去调</h1><h2 id="在量化公式里加入-V、α、β"><a href="#在量化公式里加入-V、α、β" class="headerlink" title="在量化公式里加入 V、α、β"></a>在量化公式里加入 V、α、β</h2><p>标准的非对称量化先按权重范围算出 scale，再就近取整：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mover accent="true"><mi>W</mi><mo stretchy="true">~</mo></mover><mo>=</mo><mi>s</mi><mo>⋅</mo><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi></mrow><mrow><mo fence="true">(</mo><mrow><mo fence="true">⌊</mo><mfrac><mi>W</mi><mi>s</mi></mfrac><mo>+</mo><mi>z</mi><mi>p</mi><mo fence="true">⌉</mo></mrow><mo separator="true">,</mo><mi>n</mi><mo separator="true">,</mo><mi>m</mi><mo fence="true">)</mo></mrow><mo separator="true">,</mo><mspace width="1em"><mi>s</mi><mo>=</mo><mfrac><mrow><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>W</mi><mo stretchy="false">)</mo><mo>−</mo><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>W</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mn>2</mn><mrow><mi>b</mi><mi>i</mi><mi>t</mi></mrow></msup><mo>−</mo><mn>1</mn></mrow></mfrac></mspace></mrow><annotation encoding="application/x-tex">\widetilde{W} = s \cdot \mathrm{clip}\left(\left\lfloor \frac{W}{s} + zp \right\rceil, n, m\right), \quad s = \frac{\max(W) - \min(W)}{2^{bit} - 1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9433em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9433em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span><span class="svg-align" style="top:-3.6833em;"><span class="pstrut" style="height:3em;"></span><span style="height:0.26em;"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="0.26em" viewbox="0 0 600 260" preserveaspectratio="none"><path d="M200 55.538c-77 0-168 73.953-177 73.953-3 0-7
+-2.175-9-5.437L2 97c-1-2-2-4-2-6 0-4 2-7 5-9l20-12C116 12 171 0 207 0c86 0
+ 114 68 191 68 78 0 168-68 177-68 4 0 7 2 9 5l12 19c1 2.175 2 4.35 2 6.525 0
+ 4.35-2 7.613-5 9.788l-19 13.05c-92 63.077-116.937 75.308-183 76.128
+-68.267.847-113-73.952-191-73.952z"/></svg></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.4445em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord"><span class="mord mathrm">clip</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">(</span></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">⌊</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">s</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mord mathnormal">p</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">⌉</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">m</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">)</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7751em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">bi</span><span class="mord mathnormal mtight">t</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mop">max</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mop">min</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p>SignRound 在取整前加入逐元素的偏移 V，并用 α、β 缩放权重的最大值和最小值：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mover accent="true"><mi>W</mi><mo stretchy="true">~</mo></mover><mo>=</mo><mi>s</mi><mo>⋅</mo><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi></mrow><mrow><mo fence="true">(</mo><mrow><mo fence="true">⌊</mo><mfrac><mi>W</mi><mi>s</mi></mfrac><mo>+</mo><mi>z</mi><mi>p</mi><mo>+</mo><mi>V</mi><mo fence="true">⌉</mo></mrow><mo separator="true">,</mo><mi>n</mi><mo separator="true">,</mo><mi>m</mi><mo fence="true">)</mo></mrow><mo separator="true">,</mo><mspace width="1em"><mi>s</mi><mo>=</mo><mfrac><mrow><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>W</mi><mo stretchy="false">)</mo><mo>⋅</mo><mi>α</mi><mo>−</mo><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>W</mi><mo stretchy="false">)</mo><mo>⋅</mo><mi>β</mi></mrow><mrow><msup><mn>2</mn><mrow><mi>b</mi><mi>i</mi><mi>t</mi></mrow></msup><mo>−</mo><mn>1</mn></mrow></mfrac></mspace></mrow><annotation encoding="application/x-tex">\widetilde{W} = s \cdot \mathrm{clip}\left(\left\lfloor \frac{W}{s} + zp + V \right\rceil, n, m\right), \quad s = \frac{\max(W) \cdot \alpha - \min(W) \cdot \beta}{2^{bit} - 1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9433em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9433em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span><span class="svg-align" style="top:-3.6833em;"><span class="pstrut" style="height:3em;"></span><span style="height:0.26em;"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="0.26em" viewbox="0 0 600 260" preserveaspectratio="none"><path d="M200 55.538c-77 0-168 73.953-177 73.953-3 0-7
+-2.175-9-5.437L2 97c-1-2-2-4-2-6 0-4 2-7 5-9l20-12C116 12 171 0 207 0c86 0
+ 114 68 191 68 78 0 168-68 177-68 4 0 7 2 9 5l12 19c1 2.175 2 4.35 2 6.525 0
+ 4.35-2 7.613-5 9.788l-19 13.05c-92 63.077-116.937 75.308-183 76.128
+-68.267.847-113-73.952-191-73.952z"/></svg></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.4445em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord"><span class="mord mathrm">clip</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">(</span></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">⌊</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">s</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">⌉</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">m</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">)</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7751em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">bi</span><span class="mord mathnormal mtight">t</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mop">max</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mop">min</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<ul>
+<li><strong>V（舍入偏移）</strong>：与权重同形状，初始为 0，取值限制在 [-0.5, 0.5]。每个权重最终只会在”向下取整”和”向上取整”两个整数之间二选一，相当于为每个权重决定舍入方向。</li>
+<li><strong>α、β（截断系数）</strong>：取值 [0, 1]，初始为 1，分别缩放 max(W) 和 min(W)，用来学习更合适的截断范围，思路沿用 AWQ、OmniQuant 的权重截断调优。</li>
+</ul>
+<p>优化目标是 block 级的输出重建：用同一批输入分别跑原始 block 和伪量化 block，让两者输出尽量一致：</p>
+<blockquote>
+<p><strong>这里的 block 指什么：</strong> 一个 Transformer block（层）通常包含多头自注意力（MHA，含 Q&#x2F;K&#x2F;V 和输出投影）和前馈网络（FFN，两个线性层加激活函数），以及配套的残差连接和归一化层（LayerNorm 或 RMSNorm）。SignRound 把这样一个完整结构当作优化单元：固定输入 X（上一层的输出），分别用原始权重和伪量化权重跑该 block 的前向，以两者输出的 MSE 为损失，然后逐 block 依次处理整个模型。</p>
+</blockquote>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><munder><mrow><mi>min</mi><mo>⁡</mo></mrow><mrow><mi>α</mi><mo separator="true">,</mo><mi>β</mi><mo separator="true">,</mo><mi>V</mi></mrow></munder><msubsup><mrow><mo fence="true">∥</mo><mi>W</mi><mi>X</mi><mo>−</mo><mover accent="true"><mi>W</mi><mo stretchy="true">~</mo></mover><mi>X</mi><mo fence="true">∥</mo></mrow><mi>F</mi><mn>2</mn></msubsup></mrow><annotation encoding="application/x-tex">\min_{\alpha, \beta, V} \left\| WX - \widetilde{W}X \right\|_F^2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:2.2422em;vertical-align:-0.8882em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6679em;"><span style="top:-2.3479em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0037em;">α</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.0528em;">β</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.2222em;">V</span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">min</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.8882em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="minner"><span class="mopen"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.15em;"><span style="top:-3.15em;"><span class="pstrut" style="height:3.8em;"></span><span style="width:0.556em;height:1.8em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.556em" height="1.8em" viewbox="0 0 556 1800"><path d="M145 15 v585 v600 v585 c2.667,10,9.667,15,21,15
+c10,0,16.667,-5,20,-15 v-585 v-600 v-585 c-2.667,-10,-9.667,-15,-21,-15
+c-10,0,-16.667,5,-20,15z M188 15 H145 v585 v600 v585 h43z
+M367 15 v585 v600 v585 c2.667,10,9.667,15,21,15
+c10,0,16.667,-5,20,-15 v-585 v-600 v-585 c-2.667,-10,-9.667,-15,-21,-15
+c-10,0,-16.667,5,-20,15z M410 15 H367 v585 v600 v585 h43z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.65em;"><span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord katex-accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9433em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span><span class="svg-align" style="top:-3.6833em;"><span class="pstrut" style="height:3em;"></span><span style="height:0.26em;"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="0.26em" viewbox="0 0 600 260" preserveaspectratio="none"><path d="M200 55.538c-77 0-168 73.953-177 73.953-3 0-7
+-2.175-9-5.437L2 97c-1-2-2-4-2-6 0-4 2-7 5-9l20-12C116 12 171 0 207 0c86 0
+ 114 68 191 68 78 0 168-68 177-68 4 0 7 2 9 5l12 19c1 2.175 2 4.35 2 6.525 0
+ 4.35-2 7.613-5 9.788l-19 13.05c-92 63.077-116.937 75.308-183 76.128
+-68.267.847-113-73.952-191-73.952z"/></svg></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="mclose"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.15em;"><span style="top:-3.15em;"><span class="pstrut" style="height:3.8em;"></span><span style="width:0.556em;height:1.8em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.556em" height="1.8em" viewbox="0 0 556 1800"><path d="M145 15 v585 v600 v585 c2.667,10,9.667,15,21,15
+c10,0,16.667,-5,20,-15 v-585 v-600 v-585 c-2.667,-10,-9.667,-15,-21,-15
+c-10,0,-16.667,5,-20,15z M188 15 H145 v585 v600 v585 h43z
+M367 15 v585 v600 v585 c2.667,10,9.667,15,21,15
+c10,0,16.667,-5,20,-15 v-585 v-600 v-585 c-2.667,-10,-9.667,-15,-21,-15
+c-10,0,-16.667,5,-20,15z M410 15 H367 v585 v600 v585 h43z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.65em;"><span></span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.354em;"><span style="top:-2.0003em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">F</span></span></span><span style="top:-3.6029em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.6997em;"><span></span></span></span></span></span></span></span></span></span></span></p>
+<p>其中 X 是 block 的输入。原始权重 W 全程不变；调优结束后，V 只影响取整结果，α、β 只影响 scale 等量化参数，最终产物与普通整数量化模型的格式一致，所以推理没有额外开销。</p>
+<p><img src="/../img/SignRound/fig1.png" srcset="/img/loading.gif" lazyload alt="论文 Figure 1：RTN 直接取整；SignRound 用梯度符号调整取整值 V 和截断系数 α、β，以 block 输出重建为目标。图源 arXiv:2309.05516（CC BY 4.0）"></p>
+<h2 id="为什么用-SignSGD-而不是-Adam"><a href="#为什么用-SignSGD-而不是-Adam" class="headerlink" title="为什么用 SignSGD 而不是 Adam"></a>为什么用 SignSGD 而不是 Adam</h2><p>SignSGD 只用梯度的符号更新参数，每一步的步长就是学习率：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>θ</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>θ</mi><mi>t</mi></msub><mo>−</mo><mi>l</mi><msub><mi>r</mi><mi>t</mi></msub><mo>⋅</mo><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">n</mi></mrow><mo stretchy="false">(</mo><msub><mi>g</mi><mi>t</mi></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\theta_{t+1} = \theta_t - lr_t \cdot \mathrm{sign}(g_t)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9028em;vertical-align:-0.2083em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mbin mtight">+</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2083em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">sign</span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span></p>
+<p>论文给出四点理由：</p>
+<ol>
+<li><strong>只有越过阈值才有意义</strong>：取整结果只在 W&#x2F;s + zp + V 越过取整阈值时才改变，最优的 V 通常是一段区间而不是一个精确值，不需要梯度幅值精确收敛。</li>
+<li><strong>搜索空间有界</strong>：V 在 [-0.5, 0.5]，α、β 在 [0, 1]，固定步长能在有限步数内有效覆盖这个空间；Adam 受梯度幅值大幅波动影响，很难在 200 步内收敛到最优值。</li>
+<li><strong>步长直观，几乎不用调参</strong>：默认 200 步、学习率 5e-3、线性衰减，除特别说明外全部实验共用这组设置。线性衰减下所有步长之和约为 200 × 0.005 &#x2F; 2 &#x3D; 0.5，正好让 V 从 0 出发覆盖 [-0.5, 0.5]，让 α、β 从 1 出发覆盖 [0.5, 1.0]。</li>
+<li><strong>开销小</strong>：不需要保存 Adam 的一阶、二阶矩状态，显存和计算都更省。</li>
+</ol>
+<h2 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h2><p>SignRound 按顺序逐个处理 Transformer block，只量化 block 内的线性层，embedding 和 lm_head 不量化。下图是单个 block 的调优循环：</p>
+<blockquote>
+<p><strong>MoE 模型与 router 量化：</strong> AutoRound 支持 MoE 模型（论文实验涵盖 Mixtral-8x7B 和 Mixtral-8x7B-Instruct），默认会量化 block 内的所有线性层，包括 router（即 gate 层，负责将 hidden state 映射到 num_experts 维的路由权重）。由于 router 是参数量极小的线性层，但对路由决策非常敏感，实践中建议通过 layers_to_skip 参数将各 MoE block 的 router&#x2F;gate 层排除在量化之外，对整体压缩比影响极小，却能显著避免路由崩塌风险。</p>
+</blockquote>
+<p><img src="/../img/SignRound/loop.jpg" srcset="/img/loading.gif" lazyload alt="单个 Transformer block 的 SignRound 调优循环"></p>
+<p>对应论文 Algorithm 1，每个 block 的步骤如下：</p>
+<ol>
+<li>取当前 block 的输入 X（即前一个 block 的输出），每步随机抽 8 条校准样本。</li>
+<li>分别用原始权重和伪量化权重（量化后立即反量化）做前向，得到 y_f 和 y_q。</li>
+<li>计算 MSE(y_q, y_f) 并反向传播。</li>
+<li>如果本步 loss 低于历史最低值，记录当前的 V、α、β。</li>
+<li>用 SignSGD 更新 V、α、β，回到第 1 步，共循环 200 步。</li>
+<li>用记录下的最优参数把该 block 的权重量化为整数，再处理下一个 block。</li>
+</ol>
+<h1 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h1><h2 id="实验设置"><a href="#实验设置" class="headerlink" title="实验设置"></a>实验设置</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>模型</td>
+<td>LLaMA-V1（7B &#x2F; 13B &#x2F; 30B &#x2F; 65B）、LLaMA-V2（7B &#x2F; 13B &#x2F; 70B）、Mistral-7B-v0.1；泛化实验另测 Gemma、Phi-3、Mixtral、Llama-3 等</td>
+</tr>
+<tr>
+<td>量化配置</td>
+<td>W4G-1、W4G128、W3G128、W2G128，非对称量化。W4 表示 4-bit 权重，G128 表示每 128 个权重共享一组量化参数，G-1 表示不分组（按通道）</td>
+</tr>
+<tr>
+<td>对比方法</td>
+<td>RTN、GPTQ、AWQ、HQQ、OmniQuant；另与舍入类方法 AdaRound、FlexRound 单独比较</td>
+</tr>
+<tr>
+<td>校准数据</td>
+<td>所有需要校准的方法使用同一份样本：用相同随机种子从 pile-10k 抽取 512 条。SignRound 的序列长度为 2048，其他方法沿用各自的官方设置</td>
+</tr>
+<tr>
+<td>评测</td>
+<td>主指标是 11 个零样本任务的平均准确率：MMLU、LAMBADA、HellaSwag、WinoGrande、PIQA、TruthfulQA、OpenBookQA、BoolQ、RTE、ARC-Easy、ARC-Challenge，使用 lm-eval-harness。Wikitext2、PTB、C4 困惑度放在附录作参考，作者认为个别 token 概率过低就会显著拉高困惑度</td>
+</tr>
+<tr>
+<td>SignRound 超参</td>
+<td>每个 block 调 200 步，学习率 5e-3，batch size 8，线性学习率衰减，开启自动混合精度（AMP）</td>
+</tr>
+</tbody></table>
+<h2 id="主结果：比特数越低，优势越大"><a href="#主结果：比特数越低，优势越大" class="headerlink" title="主结果：比特数越低，优势越大"></a>主结果：比特数越低，优势越大</h2><p>下表是 W2G128 下 11 个任务的平均准确率（论文 Table 1）。RTN、AWQ、HQQ 在 2-bit 下基本失效，例如 Mistral-7B 上三者的 LAMBADA 准确率只有 0.14、0.00、0.85；SignRound 保留了原模型 83%～93% 的平均分。</p>
+<table>
+<thead>
+<tr>
+<th>方法（W2G128）</th>
+<th>Mistral-7B</th>
+<th>LLaMA-V2-7B</th>
+<th>LLaMA-V2-13B</th>
+<th>LLaMA-V2-70B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>16 bit 原模型</td>
+<td>63.30</td>
+<td>57.98</td>
+<td>61.42</td>
+<td>66.12</td>
+</tr>
+<tr>
+<td>RTN</td>
+<td>30.52</td>
+<td>29.94</td>
+<td>33.51</td>
+<td>38.14</td>
+</tr>
+<tr>
+<td>GPTQ</td>
+<td>39.61</td>
+<td>35.37</td>
+<td>42.46</td>
+<td>28.47</td>
+</tr>
+<tr>
+<td>AWQ</td>
+<td>30.06</td>
+<td>30.10</td>
+<td>32.16</td>
+<td>32.23</td>
+</tr>
+<tr>
+<td>HQQ</td>
+<td>31.41</td>
+<td>29.87</td>
+<td>35.28</td>
+<td>37.42</td>
+</tr>
+<tr>
+<td>OmniQuant</td>
+<td>32.17</td>
+<td>40.74</td>
+<td>46.55</td>
+<td>51.31</td>
+</tr>
+<tr>
+<td><strong>SignRound</strong></td>
+<td><strong>52.71</strong></td>
+<td><strong>48.64</strong></td>
+<td><strong>53.46</strong></td>
+<td><strong>61.69</strong></td>
+</tr>
+<tr>
+<td>SignRound*</td>
+<td>53.01</td>
+<td>50.34</td>
+<td>54.16</td>
+<td>61.77</td>
+</tr>
+</tbody></table>
+<p>摘要中的 6.91～33.22 个百分点就来自这张表：最小差距是 LLaMA-V2-13B 上对 OmniQuant（53.46 vs 46.55），最大差距是 LLaMA-V2-70B 上对 GPTQ（61.69 vs 28.47）。</p>
+<p>比特数升高后，各方法的差距明显收窄：</p>
+<ul>
+<li><strong>W4G128</strong>：所有方法与 16 bit 原模型的差距都不超过 1.2 分，SignRound 最多领先零点几分，也不是每格最优，例如 LLaMA-V2-13B 上 GPTQ 为 61.00，SignRound 为 60.85。</li>
+<li><strong>W4G-1</strong>（不分组，更难）：Mistral-7B 上 RTN 下降 4.46 分，SignRound 只下降 0.97 分；LLaMA-V2-70B 上 AWQ（66.28）与 SignRound（66.27）基本持平。</li>
+<li><strong>W3G128</strong>：SignRound 在 4 个模型中的 3 个上领先最强基线 0.2～1.5 分，LLaMA-V2-13B 上默认配置（59.44）略低于 GPTQ（59.58）。</li>
+</ul>
+<p>按胜负统计，在 LLaMA-V1、LLaMA-V2、Mistral-7B 共 8 个模型 × 4 种配置的 32 组对比中，SignRound 优于 GPTQ 30 组、AWQ 27 组、OmniQuant 29 组；与 HQQ 对比的 16 组中优于 15 组。</p>
+<blockquote>
+<p><strong>读表提示：</strong> SignRound* 是每个模型在 8 组超参（步数 200 &#x2F; 1000、截断参数学习率 1.0&#x2F;steps 或 2.0&#x2F;steps、是否用量化后的前序 block 输出作为输入）中取最高分的结果（70B 只试了其中几组），相当于按评测成绩挑选配置。公平比较时建议以默认配置的 SignRound 为准。</p>
+</blockquote>
+<h2 id="对比其他舍入方法和优化器"><a href="#对比其他舍入方法和优化器" class="headerlink" title="对比其他舍入方法和优化器"></a>对比其他舍入方法和优化器</h2><p><strong>对比 AdaRound &#x2F; FlexRound：</strong> 200 步的 SignRound 在 W4G-1 上与 5000 步的 FlexRound 持平或更好（Mistral-7B 62.33 vs 60.94，LLaMA-V2-7B 57.48 vs 57.49）；W2G128 下 AdaRound 和 FlexRound 都停在 30～32 分，SignRound 为 48.64～53.46 分。同样跑 200 步量化 LLaMA-2-7B，SignRound 约 1041 秒，另两者约 9600～9700 秒；作者也说明，这两者用的第三方实现缺少 AMP 等优化。</p>
+<p><strong>SignSGD 对比 Adam：</strong> Adam 在 2.5e-3～2e-2 的 8 个学习率中取最好成绩，SignSGD 固定使用 5e-3。6 组对比全部是 SignSGD 更高，2-bit 下差距更大；而且 Adam 的最佳学习率随模型和配置在 2.5e-3～1.75e-2 之间变化，需要逐个搜索。</p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>模型</th>
+<th>Adam（最佳学习率）</th>
+<th>SignSGD（5e-3）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>W4G-1</td>
+<td>Mistral-7B</td>
+<td>61.82</td>
+<td><strong>62.33</strong></td>
+</tr>
+<tr>
+<td>W4G-1</td>
+<td>LLaMA-V2-7B</td>
+<td>57.45</td>
+<td><strong>57.48</strong></td>
+</tr>
+<tr>
+<td>W4G-1</td>
+<td>LLaMA-V2-13B</td>
+<td>61.06</td>
+<td><strong>61.20</strong></td>
+</tr>
+<tr>
+<td>W2G128</td>
+<td>Mistral-7B</td>
+<td>43.55</td>
+<td><strong>52.71</strong></td>
+</tr>
+<tr>
+<td>W2G128</td>
+<td>LLaMA-V2-7B</td>
+<td>45.15</td>
+<td><strong>48.64</strong></td>
+</tr>
+<tr>
+<td>W2G128</td>
+<td>LLaMA-V2-13B</td>
+<td>51.94</td>
+<td><strong>53.46</strong></td>
+</tr>
+</tbody></table>
+<p><strong>舍入调优 vs 截断调优：</strong> 两者单独使用大多优于 RTN，舍入调优贡献更大。W2G128 下 Mistral-7B 从 RTN 的 30.52 提升到只调舍入的 52.32，只调截断为 46.60，两者都调为 52.71；但在 LLaMA-V2-7B &#x2F; 13B 上，两者都调（48.64 &#x2F; 53.46）反而略低于只调舍入（49.14 &#x2F; 54.41）。</p>
+<p><strong>超参敏感性：</strong> 在 W4G-1 下分别改动校准序列长度（512）、样本数（128）、batch size（4）、步数（100 &#x2F; 1000）、学习率（1e-2），平均分相对默认配置的变化约在 -2.0～+0.4 分之间，默认配置整体最均衡。</p>
+<h2 id="量化成本"><a href="#量化成本" class="headerlink" title="量化成本"></a>量化成本</h2><p>单张 A100 80GB、W4G-1 下的量化耗时（秒，论文 Table 8）。除 OmniQuant 70B 使用 128 条校准样本外，其余均为 512 条：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>GPTQ</th>
+<th>AWQ</th>
+<th>HQQ</th>
+<th>OmniQuant</th>
+<th>SignRound</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>LLaMA-2-7B</td>
+<td>1821</td>
+<td>1328</td>
+<td>19</td>
+<td>10255</td>
+<td><strong>1041</strong>（约 17 分钟）</td>
+</tr>
+<tr>
+<td>LLaMA-2-13B</td>
+<td>3266</td>
+<td>2630</td>
+<td>30</td>
+<td>18186</td>
+<td><strong>1918</strong>（约 32 分钟）</td>
+</tr>
+<tr>
+<td>LLaMA-2-70B</td>
+<td>18517</td>
+<td>13586</td>
+<td>119</td>
+<td>35694</td>
+<td><strong>9116</strong>（约 2.5 小时）</td>
+</tr>
+</tbody></table>
+<p>在需要校准数据的方法里，SignRound 最快。HQQ 不需要校准数据，速度快 50 倍以上，但在 W4G-1 和 W2G128 上准确率明显落后，例如 LLaMA-V2-7B 的 W4G-1 只有 46.05。</p>
+<h2 id="泛化到更新的模型"><a href="#泛化到更新的模型" class="headerlink" title="泛化到更新的模型"></a>泛化到更新的模型</h2><p>作者在 W4G128 下把步数提高到 1000，并在 4 组超参中为每个模型挑选配置，测试了更新的模型。所有模型平均准确率的相对下降都在 1% 以内（论文 Table 7）：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>原模型</th>
+<th>SignRound W4G128</th>
+<th>相对变化</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Gemma-2b</td>
+<td>53.69（BF16）</td>
+<td>53.40</td>
+<td>-0.54%</td>
+</tr>
+<tr>
+<td>Llama-2-7b-chat-hf</td>
+<td>59.01（FP16）</td>
+<td>58.97</td>
+<td>-0.07%</td>
+</tr>
+<tr>
+<td>Llama-3-8B-Instruct</td>
+<td>63.52（BF16）</td>
+<td>63.12</td>
+<td>-0.63%</td>
+</tr>
+<tr>
+<td>Mistral-7B-Instruct-v0.2</td>
+<td>66.47（BF16）</td>
+<td>66.21</td>
+<td>-0.39%</td>
+</tr>
+<tr>
+<td>Mixtral-8x7B</td>
+<td>66.98（BF16）</td>
+<td>66.33</td>
+<td>-0.97%</td>
+</tr>
+<tr>
+<td>Mixtral-8x7B-Instruct</td>
+<td>70.00（BF16）</td>
+<td>69.77</td>
+<td>-0.33%</td>
+</tr>
+<tr>
+<td>Phi-3-mini-4k-instruct</td>
+<td>66.62（BF16）</td>
+<td>66.33</td>
+<td>-0.44%</td>
+</tr>
+</tbody></table>
+<p>这组实验使用 lm-eval-harness 0.4.0 以上版本和真实量化后的模型，与前面主表的数据不能直接横向比较。</p>
+<h1 id="局限与适用边界"><a href="#局限与适用边界" class="headerlink" title="局限与适用边界"></a>局限与适用边界</h1><ul>
+<li><strong>2-bit 仍有明显差距：</strong> W2G128 下 Mistral-7B 平均分 52.71，比原模型低 10.59 分。作者认为可借助非均匀量化和混合精度继续缩小差距；后续的 SignRoundV2 就引入了自适应混合精度（见文末链接）。</li>
+<li><strong>只做仅权重量化：</strong> 激活保持 16 位，收益主要在显存占用和带宽。论文没有给出推理速度测试，实际加速取决于推理框架的低比特 kernel。</li>
+<li><strong>需要校准数据和调优时间：</strong> 每个 block 都要做前向和反向传播，70B 模型约需 2.5 小时。如果追求分钟级量化或拿不到校准数据，HQQ、RTN 这类免校准方法更合适。</li>
+<li><strong>评测以零样本准确率为主：</strong> 困惑度只作参考，没有覆盖长文本生成、代码、数学推理等场景，用于这些任务前建议自行验证。</li>
+<li><strong>并非每个配置都最优：</strong> 例如 LLaMA-V1-7B 的 W2G128 上 OmniQuant（43.68）高于 SignRound（41.80）；4-bit 下各方法的差距本来就很小。</li>
+</ul>
+<h1 id="开源实现：AutoRound"><a href="#开源实现：AutoRound" class="headerlink" title="开源实现：AutoRound"></a>开源实现：AutoRound</h1><p>论文代码开源在 intel&#x2F;auto-round（Apache-2.0）。截至 2026 年 11 月，它已发展为通用的大模型训练后量化工具包：</p>
+<ul>
+<li>核心算法是 SignRound，并集成了后续的 SignRoundV2、AutoScheme 混合比特方案生成等能力。</li>
+<li>支持 W4A16、W2A16 等整数方案，以及 MXFP4、NVFP4、FP8 和 GGUF；可导出 AutoRound、AutoGPTQ、AutoAWQ、GGUF 等格式。</li>
+<li>已接入 Transformers、vLLM、SGLang，可部署在 Intel CPU &#x2F; XPU、Gaudi 和 NVIDIA GPU 上。</li>
+</ul>
+<p>最简用法如下，摘自仓库 README（对应 0.16.1 版本），后续版本以官方文档为准：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># pip install auto-round</span><br><span class="hljs-keyword">from</span> auto_round <span class="hljs-keyword">import</span> AutoRound<br><br><span class="hljs-comment"># W4A16：权重 4 bit，激活保持 16 bit</span><br>ar = AutoRound(<span class="hljs-string">&quot;Qwen/Qwen3-0.6B&quot;</span>, scheme=<span class="hljs-string">&quot;W4A16&quot;</span>)<br>ar.quantize_and_save(output_dir=<span class="hljs-string">&quot;./qmodel&quot;</span>, <span class="hljs-built_in">format</span>=<span class="hljs-string">&quot;auto_round&quot;</span>)<br></code></pre></td></tr></table></figure>
+
+<p>README 的配方建议：W4A16 用默认的 auto-round 配方；W2A16 用 auto-round-best 配方，并开启 –algorithm auto_round_v2。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.05516">Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs（arXiv:2309.05516）</a></li>
+<li><a target="_blank" rel="noopener" href="https://aclanthology.org/2024.findings-emnlp.662/">EMNLP 2024 Findings 论文页（ACL Anthology）</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/intel/auto-round">intel&#x2F;auto-round（GitHub）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2512.04746">SignRoundV2: Toward Closing the Performance Gap in Extremely Low-Bit Post-Training Quantization for LLMs（arXiv:2512.04746）</a></li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="category-chain-item">模型量化</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%87%8F%E5%8C%96%E8%AE%BA%E6%96%87/" class="print-no-link">#量化论文</a>
+      
+        <a href="/tags/PTQ/" class="print-no-link">#PTQ</a>
+      
+        <a href="/tags/LLM%E9%87%8F%E5%8C%96/" class="print-no-link">#LLM量化</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SignRound</div>
+      <div>https://jilei-hou.github.io/2026/11/07/SignRound/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Jilei Hou</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年11月7日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/11/07/GPTQ/" title="GPTQ：大模型的 3-4 Bit 训练后量化">
+                        <span class="hidden-mobile">GPTQ：大模型的 3-4 Bit 训练后量化</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -19,17 +19,17 @@
   <meta name="author" content="Jilei Hou">
   <meta name="keywords" content="">
   
-    <meta name="description" content="QDrop：随机丢弃量化，把 PTQ 推向 2-bit本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit">
+    <meta name="description" content="本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit 权重 + 2-bit 激活，写作 W2A2）下的失效与">
 <meta property="og:type" content="article">
-<meta property="og:title" content="QDrop">
+<meta property="og:title" content="QDrop：随机丢弃量化，把 PTQ 推向 2-bit">
 <meta property="og:url" content="https://jilei-hou.github.io/2026/11/07/QDrop/index.html">
 <meta property="og:site_name" content="455のblog">
-<meta property="og:description" content="QDrop：随机丢弃量化，把 PTQ 推向 2-bit本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit">
+<meta property="og:description" content="本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit 权重 + 2-bit 激活，写作 W2A2）下的失效与">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://jilei-hou.github.io/img/QDrop/fig3.png">
 <meta property="og:image" content="https://jilei-hou.github.io/img/QDrop/fig4.png">
 <meta property="article:published_time" content="2026-11-07T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-11-07T05:28:18.175Z">
+<meta property="article:modified_time" content="2026-11-07T07:22:45.426Z">
 <meta property="article:author" content="Jilei Hou">
 <meta property="article:tag" content="量化论文">
 <meta property="article:tag" content="PTQ">
@@ -39,7 +39,7 @@
   
   
   
-  <title>QDrop - 455のblog</title>
+  <title>QDrop：随机丢弃量化，把 PTQ 推向 2-bit - 455のblog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -310,7 +310,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="QDrop"></span>
+            <span id="subtitle" data-typed-text="QDrop：随机丢弃量化，把 PTQ 推向 2-bit"></span>
           
         </div>
 
@@ -383,12 +383,12 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">QDrop</h1>
+            <h1 id="seo-header">QDrop：随机丢弃量化，把 PTQ 推向 2-bit</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="QDrop：随机丢弃量化，把-PTQ-推向-2-bit"><a href="#QDrop：随机丢弃量化，把-PTQ-推向-2-bit" class="headerlink" title="QDrop：随机丢弃量化，把 PTQ 推向 2-bit"></a>QDrop：随机丢弃量化，把 PTQ 推向 2-bit</h1><p>本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit 权重 + 2-bit 激活，写作 W2A2）下的失效与解决方案。</p>
+                <p>本文介绍 arXiv:2203.05740《QDrop: Randomly Dropping Quantization for Extremely Low-bit Post-Training Quantization》（Wei、Gong、Li、Liu、Yu 等人，ICLR 2022）。它研究的是后训练量化（PTQ）在极低比特（例如 2-bit 权重 + 2-bit 激活，写作 W2A2）下的失效与解决方案。</p>
 <blockquote>
 <p><strong>QDrop 一句话结论：</strong> 在 PTQ 的逐块重建阶段，随机丢弃激活量化（默认丢弃概率 p &#x3D; 0.5），让优化后的低比特权重在损失面上更平坦；由此把 PTQ 的可行下限从 4-bit 推进到 2-bit 激活，在 ImageNet W2A2 上相比 Brecq† 可提升约 12~51 个百分点。</p>
 </blockquote>
@@ -608,7 +608,7 @@ M347 1759 V0 H263 V1759 v600 v1759 h84z"/></svg></span></span></span><span class
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>QDrop</div>
+      <div>QDrop：随机丢弃量化，把 PTQ 推向 2-bit</div>
       <div>https://jilei-hou.github.io/2026/11/07/QDrop/</div>
     </div>
     <div class="license-meta">
@@ -653,9 +653,9 @@ M347 1759 V0 H263 V1759 v600 v1759 h84z"/></svg></span></span></span><span class
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2026/11/07/FlexRound/" title="FlexRound">
+                      <a href="/2026/11/07/FlexRound/" title="FlexRound：用逐元素除法学习权重舍入的训练后量化方法">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">FlexRound</span>
+                        <span class="hidden-mobile">FlexRound：用逐元素除法学习权重舍入的训练后量化方法</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     

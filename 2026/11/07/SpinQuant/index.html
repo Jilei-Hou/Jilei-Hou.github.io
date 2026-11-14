@@ -1,0 +1,1240 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Jilei Hou">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="论文：SpinQuant: LLM Quantization with Learned Rotations（arXiv:2405.16406），ICLR 2025 作者：Zechun Liu、Changsheng Zhao（共同一作）、Igor Fedorov、Bilge Soran、Dhruv Choudhary、Raghuraman Krishnamoorthi、Vikas Chandra、">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpinQuant">
+<meta property="og:url" content="https://jilei-hou.github.io/2026/11/07/SpinQuant/index.html">
+<meta property="og:site_name" content="455のblog">
+<meta property="og:description" content="论文：SpinQuant: LLM Quantization with Learned Rotations（arXiv:2405.16406），ICLR 2025 作者：Zechun Liu、Changsheng Zhao（共同一作）、Igor Fedorov、Bilge Soran、Dhruv Choudhary、Raghuraman Krishnamoorthi、Vikas Chandra、">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jilei-hou.github.io/img/SpinQuant/fig2.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/SpinQuant/fig6.png">
+<meta property="og:image" content="https://jilei-hou.github.io/img/SpinQuant/fig1.png">
+<meta property="article:published_time" content="2026-11-07T09:00:00.000Z">
+<meta property="article:modified_time" content="2026-11-14T09:19:46.046Z">
+<meta property="article:author" content="Jilei Hou">
+<meta property="article:tag" content="量化论文">
+<meta property="article:tag" content="W4A4">
+<meta property="article:tag" content="旋转">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jilei-hou.github.io/img/SpinQuant/fig2.png">
+  
+  
+  
+  <title>SpinQuant - 455のblog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/KaTeX/0.16.2/katex.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"jilei-hou.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>455のblog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SpinQuant"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-11-07 17:00" pubdate>
+          2026年11月7日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          12k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          104 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SpinQuant</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <ul>
+<li>论文：SpinQuant: LLM Quantization with Learned Rotations（<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2405.16406">arXiv:2405.16406</a>），ICLR 2025</li>
+<li>作者：Zechun Liu、Changsheng Zhao（共同一作）、Igor Fedorov、Bilge Soran、Dhruv Choudhary、Raghuraman Krishnamoorthi、Vikas Chandra、Yuandong Tian、Tijmen Blankevoort，Meta</li>
+<li>代码：<a target="_blank" rel="noopener" href="https://github.com/facebookresearch/SpinQuant">facebookresearch&#x2F;SpinQuant</a>（CC BY-NC 4.0，非商用许可）</li>
+<li>数据来源：arXiv v4（2025-02-20）</li>
+</ul>
+<blockquote>
+<p><strong>一句话总结</strong>：SpinQuant 在 Transformer 中插入成对的正交旋转矩阵，全精度输出保持不变，权重和激活中的离群值却被摊平；它不用随机旋转，而是针对量化后的损失把旋转矩阵学出来。</p>
+<ul>
+<li>问题：离群值撑大量化范围，是 4-bit 激活与 KV cache 量化掉点的主要原因。</li>
+<li>发现：随机旋转效果不稳定，100 次随机试验中最好与最差相差 13 分（LLaMA-2 7B，W4A4）。</li>
+<li>方法：冻结模型权重，用 Cayley SGD 在正交矩阵空间上优化旋转矩阵，可学习参数约占权重的 0.26%。</li>
+<li>结果：LLaMA-2 7B 在 W4A4KV4 下零样本准确率 64.0，距全精度（66.9）仅 2.9 分，比 LLM-QAT 高 19.1 分、比 SmoothQuant 高 25.0 分；在 LLaMA-3 8B &#x2F; 70B 的所有对比设置下，都优于同期的随机旋转方法 QuaRot。</li>
+</ul>
+</blockquote>
+<p>适合读者：做大模型推理部署、量化或端侧落地的算法与工程同学，需要了解训练后量化（PTQ）的基本概念。下文用 W4A4KV4 表示权重、激活、KV cache 分别量化到 4 &#x2F; 4 &#x2F; 4 bit，论文表格中的 4-4-4 是同一含义；”零样本准确率”指 8 个零样本常识推理任务的平均准确率。</p>
+<h1 id="问题：离群值让低比特量化失效"><a href="#问题：离群值让低比特量化失效" class="headerlink" title="问题：离群值让低比特量化失效"></a>问题：离群值让低比特量化失效</h1><p>均匀量化把实数张量映射到 N bit 的整数网格。以对称量化为例：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>X</mi><mi>Q</mi></msub><mo>=</mo><mi>α</mi><mo stretchy="false">⌊</mo><mfrac><msub><mi>X</mi><mi>R</mi></msub><mi>α</mi></mfrac><mo stretchy="false">⌉</mo><mo separator="true">,</mo><mspace width="1em"><mi>α</mi><mo>=</mo><mfrac><mrow><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi mathvariant="normal">∣</mi><msub><mi>X</mi><mi>R</mi></msub><mi mathvariant="normal">∣</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mn>2</mn><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></msup><mo>−</mo><mn>1</mn></mrow></mfrac></mspace></mrow><annotation encoding="application/x-tex">X_Q = \alpha \lfloor \frac{X_R}{\alpha} \rceil, \quad \alpha = \frac{\max(|X_R|)}{2^{N-1}-1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0463em;vertical-align:-0.686em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mopen">⌊</span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose">⌉</span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7673em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mop">max</span><span class="mopen">(</span><span class="mord">∣</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">∣</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p>各符号的含义：</p>
+<ul>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>R</mi></msub></mrow><annotation encoding="application/x-tex">X_R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：原始的实数张量（FP16 权重或激活）。下标 R 表示实数（real），与后文的旋转矩阵 R 无关。</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span></span></span></span>：量化位宽，例如 4 bit。</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span>：缩放因子，即量化步长，也就是相邻两个格点之间的距离。</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">⌊</mo><mo>⋅</mo><mo stretchy="false">⌉</mo></mrow><annotation encoding="application/x-tex">\lfloor \cdot \rceil</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">⌊</span><span class="mord">⋅</span><span class="mclose">⌉</span></span></span></span>：四舍五入到最近的整数。<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">⌊</mo><msub><mi>X</mi><mi>R</mi></msub><mi mathvariant="normal">/</mi><mi>α</mi><mo stretchy="false">⌉</mo></mrow><annotation encoding="application/x-tex">\lfloor X_R / \alpha \rceil</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">⌊</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">/</span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mclose">⌉</span></span></span></span> 是实际存储的整数，对称 4-bit 量化时取值为 −7 到 7。</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>Q</mi></msub></mrow><annotation encoding="application/x-tex">X_Q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>：把整数再乘回 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span> 得到的值，即”量化后再反量化”的张量。它与 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>R</mi></msub></mrow><annotation encoding="application/x-tex">X_R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 处在同一数值尺度，但只能取格点上的值，两者之差就是量化误差。这种写法常称为伪量化（fake quantization），用来在浮点计算中模拟量化误差；SpinQuant 学习旋转时，网络中的量化也是这样模拟的。</li>
+</ul>
+<p>论文公式 (1) 的一般形式还带一个偏移量 β（零点）：<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>Q</mi></msub><mo>=</mo><mi>α</mi><mo stretchy="false">⌊</mo><mfrac><mrow><msub><mi>X</mi><mi>R</mi></msub><mo>−</mo><mi>β</mi></mrow><mi>α</mi></mfrac><mo stretchy="false">⌉</mo><mo>+</mo><mi>β</mi></mrow><annotation encoding="application/x-tex">X_Q = \alpha \lfloor \frac{X_R - \beta}{\alpha} \rceil + \beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.2772em;vertical-align:-0.345em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mopen">⌊</span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9322em;"><span style="top:-2.655em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0037em;">α</span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.4461em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3567em;margin-left:-0.0785em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1433em;"><span></span></span></span></span></span></span><span class="mbin mtight">−</span><span class="mord mathnormal mtight" style="margin-right:0.0528em;">β</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.345em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose">⌉</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span>。对称量化取 β &#x3D; 0，即上式；非对称量化取 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo>=</mo><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><msub><mi>X</mi><mi>R</mi></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\beta = \min(X_R)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mop">min</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span>、<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mfrac><mrow><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><msub><mi>X</mi><mi>R</mi></msub><mo stretchy="false">)</mo><mo>−</mo><mi>min</mi><mo>⁡</mo><mo stretchy="false">(</mo><msub><mi>X</mi><mi>R</mi></msub><mo stretchy="false">)</mo></mrow><mrow><msup><mn>2</mn><mi>N</mi></msup><mo>−</mo><mn>1</mn></mrow></mfrac></mrow><annotation encoding="application/x-tex">\alpha = \frac{\max(X_R) - \min(X_R)}{2^N - 1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.4202em;vertical-align:-0.4102em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.01em;"><span style="top:-2.6481em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mtight">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7741em;"><span style="top:-2.786em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span></span></span></span></span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.485em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mop mtight"><span class="mtight">m</span><span class="mtight">a</span><span class="mtight">x</span></span><span class="mopen mtight">(</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3567em;margin-left:-0.0785em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1433em;"><span></span></span></span></span></span></span><span class="mclose mtight">)</span><span class="mbin mtight">−</span><span class="mop mtight"><span class="mtight">m</span><span class="mtight">i</span><span class="mtight">n</span></span><span class="mopen mtight">(</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3567em;margin-left:-0.0785em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="katex-sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1433em;"><span></span></span></span></span></span></span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.4102em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span>，更适合正负不对称的分布。SpinQuant 对激活和 KV cache 使用非对称量化。</p>
+<p>从 α 的定义可以看出，缩放因子由张量中绝对值最大的元素决定。只要存在少量离群值，量化步长就会被拉大，绝大多数正常数值只能落在少数几个格点上，误差随之上升。4-bit 最多只有 16 个格点（上面的对称量化只用到 15 个），这个问题最严重。</p>
+<p>LLM 中的离群值有两个特点：</p>
+<ul>
+<li>集中在少数固定通道。激活离群值往往出现在特定通道上，而多数硬件不支持逐通道的激活量化，只能逐 token 或逐张量量化，这些通道会拖累整体精度。</li>
+<li>分布严重长尾。作者用峰度（kurtosis）衡量尾部有多重：高斯分布约为 3，而 LLaMA-2 7B 中很多层的输入激活峰度超过 200。乘上一个随机旋转矩阵后，各层峰度都降到 3 左右，激活和权重的量化误差同时下降。</li>
+</ul>
+<p><img src="/../img/SpinQuant/fig2.png" srcset="/img/loading.gif" lazyload alt="论文 Figure 2：LLaMA-2 7B 中注意力（MHSA）与 FFN 输入激活在旋转前后的分布。旋转前离群值集中在个别通道，旋转后数值被摊到各个通道。"></p>
+<p>此前的应对思路主要有三类：在权重与激活之间转移量化难度（SmoothQuant、AWQ），用混合精度单独处理离群值（如 LLM.int8()），以及用二阶信息补偿权重量化误差（GPTQ）。SpinQuant 走的是另一条路：用旋转把离群值摊平。同期的 QuaRot 和更早的 QuIP &#x2F; QuIP# 也用了旋转，但旋转矩阵都是随机生成或固定的，不经过学习。</p>
+<h1 id="核心思路：旋转不改变输出，却能改变量化误差"><a href="#核心思路：旋转不改变输出，却能改变量化误差" class="headerlink" title="核心思路：旋转不改变输出，却能改变量化误差"></a>核心思路：旋转不改变输出，却能改变量化误差</h1><h2 id="旋转不变性"><a href="#旋转不变性" class="headerlink" title="旋转不变性"></a>旋转不变性</h2><p>对任意正交矩阵 R（满足 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><msup><mi>R</mi><mi mathvariant="normal">⊤</mi></msup><mo>=</mo><mi>I</mi></mrow><annotation encoding="application/x-tex">RR^{\top}=I</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8491em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span></span></span></span>），线性层满足：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>X</mi><mi>W</mi><mo>=</mo><mo stretchy="false">(</mo><mi>X</mi><mi>R</mi><mo stretchy="false">)</mo><mo stretchy="false">(</mo><msup><mi>R</mi><mi mathvariant="normal">⊤</mi></msup><mi>W</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">XW = (XR)(R^{\top}W)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.1491em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mclose">)</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8991em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mclose">)</span></span></span></span></span></p>
+<p>激活乘以 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi></mrow><annotation encoding="application/x-tex">R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span>、权重乘以 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>R</mi><mi mathvariant="normal">⊤</mi></msup></mrow><annotation encoding="application/x-tex">R^{\top}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span></span></span></span></span> 后，浮点计算结果完全不变；<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>R</mi><mi mathvariant="normal">⊤</mi></msup><mi>W</mi></mrow><annotation encoding="application/x-tex">R^{\top}W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span> 可以离线算好替换原权重，激活一侧的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi></mrow><annotation encoding="application/x-tex">R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span> 也能并入上一层的权重（如 Embedding 或上一个块的输出投影），推理时不增加计算。但量化发生在 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mi>R</mi></mrow><annotation encoding="application/x-tex">XR</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>R</mi><mi mathvariant="normal">⊤</mi></msup><mi>W</mi></mrow><annotation encoding="application/x-tex">R^{\top}W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span> 上：旋转把集中在少数通道的大数值分散到所有通道，最大值相对整体幅度变小，量化误差随之下降。</p>
+<p>要让整个网络满足这一性质，还需要<strong>处理 RMSNorm</strong>：它的逐通道缩放参数会破坏旋转不变性。论文沿用 SliceGPT 的做法，先把缩放参数并入后续线性层的权重；剩下的归一化只依赖向量范数，而旋转不改变范数。</p>
+<h2 id="为什么旋转能帮助量化"><a href="#为什么旋转能帮助量化" class="headerlink" title="为什么旋转能帮助量化"></a>为什么旋转能帮助量化</h2><p>论文用低维例子说明直觉。假设二维激活中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">x_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 的幅值总是明显大于 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">x_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>，两者一起量化时，量化范围被 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">x_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 占满，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">x_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 的精度被浪费；把坐标轴旋转 45°，两个轴上的取值范围变得接近。三维时，若 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">x_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 的幅值是另外两维的 4 倍，按论文示例旋转 45° 后，各轴最大值从 [2, 0.5, 0.5] 变为 [1, 1, 1.414]，分布更均衡。</p>
+<p><img src="/../img/SpinQuant/fig6.png" srcset="/img/loading.gif" lazyload alt="论文 Figure 6：(a)(b) 二维分布旋转 45° 后两轴取值范围接近；(c)(d) 三维示例中旋转后各轴最大值更均衡。"></p>
+<p>Hadamard 矩阵是元素只有 ±1&#x2F;√n 两种取值的正交矩阵，相当于把所有方向尽量均匀地混合。在不知道激活分布时，它通常比任意随机旋转效果更好。但如果知道激活分布，就有可能找到比 Hadamard 更合适的旋转，这正是 SpinQuant 去学习旋转矩阵的出发点。</p>
+<p>文中会用到两种 Hadamard 矩阵：</p>
+<ul>
+<li>固定 Hadamard：按固定规则构造出来的那一个矩阵。最常见的构造从 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>2</mn></msub><mo>=</mo><mfrac><mn>1</mn><msqrt><mn>2</mn></msqrt></mfrac><mrow><mo fence="true">[</mo><mtable rowspacing="0.16em" columnalign="center center" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mn>1</mn></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mn>1</mn></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mn>1</mn></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mo>−</mo><mn>1</mn></mrow></mstyle></mtd></mtr></mtable><mo fence="true">]</mo></mrow></mrow><annotation encoding="application/x-tex">H_2 = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 &amp; 1 \\ 1 &amp; -1 \end{bmatrix}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8451em;"><span style="top:-2.551em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord sqrt mtight"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9128em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mtight" style="padding-left:0.833em;"><span class="mord mtight">2</span></span></span><span style="top:-2.8728em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail mtight" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewbox="0 0 400000 1080" preserveaspectratio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1272em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.538em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">[</span></span><span class="mord"><span class="mtable"><span class="col-align-c"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.45em;"><span style="top:-3.61em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span><span style="top:-2.41em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.95em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:0.5em;"></span><span class="arraycolsep" style="width:0.5em;"></span><span class="col-align-c"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.45em;"><span style="top:-3.61em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span><span style="top:-2.41em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">−</span><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.95em;"><span></span></span></span></span></span></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">]</span></span></span></span></span></span> 出发，按 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mrow><mn>2</mn><mi>n</mi></mrow></msub><mo>=</mo><mfrac><mn>1</mn><msqrt><mn>2</mn></msqrt></mfrac><mrow><mo fence="true">[</mo><mtable rowspacing="0.16em" columnalign="center center" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>H</mi><mi>n</mi></msub></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>H</mi><mi>n</mi></msub></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>H</mi><mi>n</mi></msub></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mo>−</mo><msub><mi>H</mi><mi>n</mi></msub></mrow></mstyle></mtd></mtr></mtable><mo fence="true">]</mo></mrow></mrow><annotation encoding="application/x-tex">H_{2n} = \frac{1}{\sqrt{2}}\begin{bmatrix} H_n &amp; H_n \\ H_n &amp; -H_n \end{bmatrix}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">2</span><span class="mord mathnormal mtight">n</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.4em;vertical-align:-0.95em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8451em;"><span style="top:-2.551em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord sqrt mtight"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9128em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mtight" style="padding-left:0.833em;"><span class="mord mtight">2</span></span></span><span style="top:-2.8728em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail mtight" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewbox="0 0 400000 1080" preserveaspectratio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1272em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.538em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">[</span></span><span class="mord"><span class="mtable"><span class="col-align-c"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.45em;"><span style="top:-3.61em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-2.41em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.95em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:0.5em;"></span><span class="arraycolsep" style="width:0.5em;"></span><span class="col-align-c"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.45em;"><span style="top:-3.61em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-2.41em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">−</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.95em;"><span></span></span></span></span></span></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">]</span></span></span></span></span></span> 逐级扩大。同一维度下，每次得到的都是同一个矩阵。</li>
+<li>随机 Hadamard：先把每个通道随机乘上 +1 或 −1，再乘固定 Hadamard，即 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mi>H</mi></mrow><annotation encoding="application/x-tex">SH</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span></span></span></span>，其中 S 是对角元素随机取 ±1 的对角矩阵。n 维时有 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mi>n</mi></msup></mrow><annotation encoding="application/x-tex">2^n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6644em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6644em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span></span></span></span></span></span></span></span> 种取法，每个随机种子对应其中一种。</li>
+</ul>
+<p>两者都是正交矩阵，元素都是 ±1&#x2F;√n，都能用快速 Hadamard 变换计算，随机版只多一步符号翻转。区别在于固定版只有一个：如果输入恰好与它的某一行方向一致，变换后能量会集中到一个坐标上，反而制造出离群值。随机翻转符号后，这种情况几乎不会发生，QuIP# 正是依靠这种随机化，保证对任意输入都能以高概率摊平数值。代价是结果随种子波动：下一节会看到，随机 Hadamard 在 100 个种子之间相差可达 6 分。</p>
+<p>两种矩阵在本文涉及的方法中的用法：QuaRot 只在残差流（R1 位置）用随机 Hadamard，其余位置都用固定 Hadamard；SpinQuant 的 R1、R2 用随机 Hadamard 初始化后再学习，R3、R4 用固定 Hadamard。</p>
+<h2 id="随机旋转不够稳定"><a href="#随机旋转不够稳定" class="headerlink" title="随机旋转不够稳定"></a>随机旋转不够稳定</h2><p>旋转在统计意义上有帮助，但不同随机旋转的效果差异很大。论文对 W4A4 量化的 LLaMA-2 7B 做了 100 次随机试验：</p>
+<ul>
+<li>随机正交矩阵：最好与最差的零样本准确率相差 13 分。</li>
+<li>随机 Hadamard 矩阵：整体更好，但波动仍达 6 分。</li>
+<li>Cayley 优化后的旋转：优于 100 个随机种子中最好的随机矩阵和随机 Hadamard 矩阵，且不同随机种子之间方差很小。</li>
+</ul>
+<p>既然全精度输出与 R 无关，R 就是一个只影响量化误差的自由参数。直接针对量化后的损失去优化它，比随机碰运气更可靠。</p>
+<h1 id="方法：在哪里旋转、怎么学"><a href="#方法：在哪里旋转、怎么学" class="headerlink" title="方法：在哪里旋转、怎么学"></a>方法：在哪里旋转、怎么学</h1><h2 id="四个旋转矩阵"><a href="#四个旋转矩阵" class="headerlink" title="四个旋转矩阵"></a>四个旋转矩阵</h2><p>SpinQuant 在 LLaMA 类结构中定义了 4 个旋转矩阵：R1、R2 可完全并入权重，R3、R4 需要在推理时对激活做在线计算。</p>
+<p><img src="/../img/SpinQuant/fig1.png" srcset="/img/loading.gif" lazyload alt="论文 Figure 1：(a) 残差流整体旋转 R1；(b) 注意力块内的 R2 与 R3；(c) FFN 块内的 R4。"></p>
+<table>
+<thead>
+<tr>
+<th>旋转</th>
+<th>位置</th>
+<th>能否并入权重</th>
+<th>是否学习</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td>残差流，hidden × hidden，全网共用一个：Embedding 输出乘 R1，每个块入口乘 R1ᵀ、出口乘 R1</td>
+<td>能：并入 Embedding、LM Head，以及各层 Q&#x2F;K&#x2F;V&#x2F;Up&#x2F;Gate（输入侧）和 O&#x2F;Down（输出侧）投影</td>
+<td>学习</td>
+<td>消除残差流离群值，改善 Q&#x2F;K&#x2F;V&#x2F;Up&#x2F;Gate 输入激活的量化</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>注意力块内，V 投影输出到 O 投影输入之间，按注意力头作用，head_dim × head_dim</td>
+<td>能：W_v 右乘 R2，W_o 左乘 R2ᵀ</td>
+<td>学习（每层单独学习）</td>
+<td>改善 V cache 和 O 投影输入激活的量化</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>注意力块内，RoPE 之后的 Q 和 K</td>
+<td>不能：R3 位于 RoPE 之后，无法并入 W_q、W_k，Q、K 两侧都要在推理时在线计算</td>
+<td>否，固定为 Hadamard</td>
+<td>低比特 KV cache 量化时，降低 Key 中的离群值</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>FFN 块内，Down 投影的输入</td>
+<td>不能完全并入：激活一侧要在推理时在线计算，对应的逆旋转可并入 Down 投影权重</td>
+<td>否，固定为 Hadamard</td>
+<td>4-bit 激活量化时，降低 Down 投影输入的离群值</td>
+</tr>
+</tbody></table>
+<p>按是否使用在线 Hadamard 旋转，SpinQuant 分为两个版本（论文中用下标 no had 与 had 区分，had 是 Hadamard 的缩写；下文写作 SpinQuant-NoHad 与 SpinQuant-Had）：</p>
+<ul>
+<li>SpinQuant-NoHad：只用 R1、R2。旋转学完后直接并入权重，推理时只需替换权重，不改前向计算，也不需要额外算子。R1、R2 也用随机 Hadamard 矩阵初始化，但学完后是一般的正交矩阵且已并入权重，”no had”指的是推理时没有在线 Hadamard 变换。</li>
+<li>SpinQuant-Had：在 R1、R2 之外加上在线 Hadamard 旋转 R3、R4，面向 4-bit 激活或 KV cache 这类更激进的设置，推理时需要快速 Hadamard 变换算子。</li>
+</ul>
+<p><strong>为什么只学习 R1、R2，而 R3、R4 固定为 Hadamard 矩阵</strong>？论文给出的理由是：R3、R4 无法并入权重，必须在线计算，而在线 Hadamard 变换有高效实现。展开来说：</p>
+<ul>
+<li>R3、R4 只能在线计算：R3 位于 RoPE 之后，RoPE 随 token 位置变化，R3 无法与 W_q、W_k 合并；R4 位于 SwiGLU 的逐元素乘法之后，这一步是非线性的，激活一侧的 R4 无法并入 W_up、W_gate。推理时每个 token 都要实时乘一次。</li>
+<li>在线计算稠密矩阵代价高：学出来的旋转是稠密矩阵，每个 token 的计算量为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><msup><mi>d</mi><mn>2</mn></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(d^2)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">d</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span>，还要额外存储参数。按 LLaMA-2 7B 估算，R4 的维度 d &#x3D; 11008，每层每个 token 约 1.2 亿次乘加，比 Down 投影本身（4096 × 11008，约 4500 万次）还多。快速 Hadamard 变换的计算量远小于稠密矩阵乘法，也不需要存储参数，论文实测在线 Hadamard 在 M1 Pro CPU 上增加约 8% 延迟，在 H100 上约 3%。R3 只作用于单个注意力头（head_dim 通常为 128），稠密矩阵的代价小得多，论文没有单独讨论，统一用了 Hadamard。</li>
+<li>R1、R2 没有这个问题：它们离线并入权重，学成任何正交矩阵都不增加推理开销，所以值得去学。</li>
+</ul>
+<p>论文没有对比学习 R3、R4 的效果，这是基于推理效率的取舍，学习它们能否进一步提升精度尚未验证。另外，官方代码在学习 R1、R2 之前就把 R3、R4 插入了网络，学到的 R1、R2 是配合固定的 R3、R4 优化出来的。</p>
+<h2 id="用-Cayley-SGD-学习旋转"><a href="#用-Cayley-SGD-学习旋转" class="headerlink" title="用 Cayley SGD 学习旋转"></a>用 Cayley SGD 学习旋转</h2><p>优化目标是：在预训练权重 W 固定的前提下，找到让量化网络在校准集上任务损失（如交叉熵）最小的 R1、R2：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>arg</mi><mo>⁡</mo><munder><mrow><mi>min</mi><mo>⁡</mo></mrow><mrow><mi>R</mi><mo>∈</mo><mi mathvariant="script">M</mi></mrow></munder><msub><mi mathvariant="script">L</mi><mi>Q</mi></msub><mo stretchy="false">(</mo><msub><mi>R</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>R</mi><mn>2</mn></msub><mo>∣</mo><mi>W</mi><mo separator="true">,</mo><mi>X</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\arg\min_{R \in \mathcal{M}} \mathcal{L}_Q(R_1, R_2 \mid W, X)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.5217em;vertical-align:-0.7717em;"></span><span class="mop">ar<span style="margin-right:0.0139em;">g</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6679em;"><span style="top:-2.3557em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span><span class="mrel mtight">∈</span><span class="mord mathcal mtight">M</span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">min</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7717em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathcal">L</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∣</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="mclose">)</span></span></span></span></span></p>
+<p>其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">M</mi></mrow><annotation encoding="application/x-tex">\mathcal{M}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathcal">M</span></span></span></span> 是 Stiefel 流形，即全体正交矩阵的集合。难点在于每一步更新后 R 必须仍是正交矩阵，否则全精度网络的输出会改变，普通 SGD 做不到这一点。论文采用 Cayley SGD，用 Cayley 变换构造更新：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>R</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><msup><mrow><mo fence="true">(</mo><mi>I</mi><mo>−</mo><mfrac><mi>α</mi><mn>2</mn></mfrac><mi>Y</mi><mo fence="true">)</mo></mrow><mrow><mo>−</mo><mn>1</mn></mrow></msup><mrow><mo fence="true">(</mo><mi>I</mi><mo>+</mo><mfrac><mi>α</mi><mn>2</mn></mfrac><mi>Y</mi><mo fence="true">)</mo></mrow><mi>R</mi></mrow><annotation encoding="application/x-tex">R&#x27; = \left(I - \frac{\alpha}{2}Y\right)^{-1}\left(I + \frac{\alpha}{2}Y\right)R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8019em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.04em;vertical-align:-0.686em;"></span><span class="minner"><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size2">(</span></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.1076em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">2</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size2">)</span></span></span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:1.354em;"><span style="top:-3.6029em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size2">(</span></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.1076em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">2</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size2">)</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span></span></p>
+<p>其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi></mrow><annotation encoding="application/x-tex">Y</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span></span></span></span> 是由损失梯度投影得到的反对称矩阵（<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>Y</mi><mi mathvariant="normal">⊤</mi></msup><mo>=</mo><mo>−</mo><mi>Y</mi></mrow><annotation encoding="application/x-tex">Y^{\top}=-Y</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span></span></span></span>），<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span> 是步长（与前文的量化缩放因子不是同一个量）。反对称矩阵的 Cayley 变换一定是正交矩阵，所以 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>R</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><annotation encoding="application/x-tex">R&#x27;</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7519em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span></span></span></span> 始终保持正交。式中的矩阵求逆用不动点迭代近似，每步计算量约为普通 SGD 的 2 倍。</p>
+<p>两个细节：</p>
+<ul>
+<li><strong>可学习参数只有 R1、R2</strong>，约占模型权重的 0.26%，模型权重全程冻结。R3、R4 为什么不学习，见上一节”四个旋转矩阵”末尾。</li>
+<li>论文附录对单个线性层做了梯度分析：不做量化时，输出对 R 的梯度恒为 0；引入量化后，梯度由旋转后权重和激活的量化误差驱动。也就是说，学习 R 只对量化模型有意义，优化的正是量化误差本身。</li>
+</ul>
+<h2 id="完整流程"><a href="#完整流程" class="headerlink" title="完整流程"></a>完整流程</h2><ol>
+<li>预处理：把 RMSNorm 的缩放参数并入后续线性层，使网络满足旋转不变性。</li>
+<li>初始化：R1、R2 设为随机 Hadamard 矩阵；SpinQuant-Had 再插入固定的 Hadamard 矩阵 R3、R4。</li>
+<li>学习旋转：冻结权重，权重保持 16 bit，只量化激活和 KV cache；用 800 条 WikiText-2 样本跑 100 步 Cayley SGD，学习率从 1.5 线性衰减到 0。</li>
+<li>合并：把学到的 R1、R2 并入对应的权重矩阵。</li>
+<li>量化权重：对旋转后的权重做 GPTQ（128 条 WikiText-2 样本，序列长度 2048），也可以直接用 RTN。</li>
+</ol>
+<p>第 3 步只量化激活是有意为之：GPTQ 能很好地补偿权重量化误差，却不处理激活误差，让旋转专注于激活更合理。在 LLaMA-2 7B 的 W4A4KV4 设置下，旋转针对 W16A4KV4 学习、再交给 GPTQ 量化权重，零样本准确率为 64.0；直接针对 W4A4KV4 学习只有 60.9。</p>
+<h1 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h1><h2 id="实验设置"><a href="#实验设置" class="headerlink" title="实验设置"></a>实验设置</h2><ul>
+<li>模型：LLaMA-2 7B &#x2F; 13B &#x2F; 70B、LLaMA-3.2 1B &#x2F; 3B、LLaMA-3 8B、Mistral-7B（v0.3），共 7 个。</li>
+<li>指标：8 个零样本常识推理任务（BoolQ、PIQA、SIQA、HellaSwag、WinoGrande、ARC-e、ARC-c、OBQA）的平均准确率，以及 WikiText2 困惑度。</li>
+<li>对比方法：RTN（直接四舍五入量化）、SmoothQuant、LLM-QAT（量化感知训练方法）、GPTQ，以及纯权重量化方法 AWQ、OmniQuant、QuIP#；另与同期的 QuaRot 单独对比。</li>
+<li>量化设置：W4A8KV16、W4A8KV8、W4A4KV16、W4A4KV4 四种。激活与 KV cache 采用非对称 min-max 量化，不做截断。</li>
+</ul>
+<h2 id="W4A4KV4-主结果"><a href="#W4A4KV4-主结果" class="headerlink" title="W4A4KV4 主结果"></a>W4A4KV4 主结果</h2><p>下表为 W4A4KV4 下的零样本准确率（论文 Table 1）。”现有最佳”取 RTN、SmoothQuant、LLM-QAT、GPTQ 中的最高分。</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>全精度</th>
+<th>现有最佳</th>
+<th>SpinQuant-NoHad</th>
+<th>SpinQuant-Had</th>
+<th>Had 距全精度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>LLaMA-2 7B</td>
+<td>66.9</td>
+<td>44.9（LLM-QAT）</td>
+<td>56.0</td>
+<td>64.0</td>
+<td>2.9</td>
+</tr>
+<tr>
+<td>LLaMA-2 13B</td>
+<td>68.3</td>
+<td>40.5（SmoothQuant）</td>
+<td>60.7</td>
+<td>66.9</td>
+<td>1.4</td>
+</tr>
+<tr>
+<td>LLaMA-2 70B</td>
+<td>72.9</td>
+<td>55.9（SmoothQuant）</td>
+<td>62.0</td>
+<td>71.2</td>
+<td>1.7</td>
+</tr>
+<tr>
+<td>LLaMA-3.2 1B</td>
+<td>56.9</td>
+<td>41.6（GPTQ）</td>
+<td>45.3</td>
+<td>53.4</td>
+<td>3.5</td>
+</tr>
+<tr>
+<td>LLaMA-3.2 3B</td>
+<td>63.9</td>
+<td>45.9（LLM-QAT）</td>
+<td>52.9</td>
+<td>60.5</td>
+<td>3.4</td>
+</tr>
+<tr>
+<td>LLaMA-3 8B</td>
+<td>69.6</td>
+<td>43.2（LLM-QAT）</td>
+<td>52.6</td>
+<td>65.5</td>
+<td>4.1</td>
+</tr>
+<tr>
+<td>Mistral-7B</td>
+<td>71.0</td>
+<td>41.4（RTN）</td>
+<td>52.4</td>
+<td>68.6</td>
+<td>2.4</td>
+</tr>
+</tbody></table>
+<ul>
+<li>现有方法在 W4A4KV4 下基本失效：多数结果只有 35–46 分（LLaMA-2 70B 上 SmoothQuant 的 55.9 是例外），WikiText2 困惑度多在数百以上，最高达 1e6。</li>
+<li>只用 R1、R2（SpinQuant-NoHad）已经比现有最佳高 3.7–20.2 分，但距全精度仍有 7.6–18.6 分。</li>
+<li>加上在线 Hadamard 旋转（SpinQuant-Had）后，差距缩小到 1.4–4.1 分。困惑度同样接近全精度，例如 LLaMA-2 7B 为 5.9（全精度 5.5），同设置下 GPTQ 为 9e3。</li>
+</ul>
+<p>W4A8 下 SpinQuant-NoHad 就已足够，加 Hadamard 收益有限。例如 W4A8KV8 下的 LLaMA-3 8B：全精度 69.6，GPTQ 64.6，SpinQuant-NoHad 68.6，SpinQuant-Had 68.8；Mistral-7B 上 SpinQuant-NoHad 比 RTN 高 10.5 分（58.9 → 69.4）。此时 SpinQuant 的 WikiText2 困惑度与 OmniQuant、QuIP# 等 4-bit 纯权重量化方法相当，而 SpinQuant 还额外量化了激活，也没有用 QuIP# 的向量量化。</p>
+<p>附录还给出了 3-bit 权重（W3A8）的结果：SpinQuant-Had 距全精度 1.2–5.3 分，现有方法为 9.0–28.0 分。</p>
+<h2 id="与-QuaRot-对比"><a href="#与-QuaRot-对比" class="headerlink" title="与 QuaRot 对比"></a>与 QuaRot 对比</h2><p>QuaRot 是同期工作，同样用旋转消除离群值，但使用随机 Hadamard 旋转，所有旋转都不学习（只有残差流上的是随机 Hadamard，其余是固定的 Hadamard）。两者的旋转结构对比如下：</p>
+<table>
+<thead>
+<tr>
+<th>位置（SpinQuant 中的记号）</th>
+<th>QuaRot</th>
+<th>SpinQuant-Had</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>残差流（R1）</td>
+<td>随机 Hadamard，并入权重</td>
+<td>学习得到（随机 Hadamard 初始化），并入权重</td>
+</tr>
+<tr>
+<td>V 投影到 O 投影（R2）</td>
+<td>按头的固定 Hadamard，离线并入 W_v、W_o（与 R2 对应）；此外在 O 投影前额外做一次跨注意力头的在线 Hadamard，SpinQuant 中没有对应项</td>
+<td>学习得到，按头作用、每层独立，离线并入 W_v、W_o；没有跨头的在线 Hadamard</td>
+</tr>
+<tr>
+<td>RoPE 之后的 Q、K（R3）</td>
+<td>按头的在线 Hadamard</td>
+<td>按头的在线 Hadamard，位置和作用与 QuaRot 相同</td>
+</tr>
+<tr>
+<td>Down 投影输入（R4）</td>
+<td>在线 Hadamard，逆变换并入 W_down</td>
+<td>在线 Hadamard，逆变换并入 W_down，与 QuaRot 相同</td>
+</tr>
+</tbody></table>
+<p>R3、R4 在两种方法中基本相同：位置一致，都是不学习的在线 Hadamard 旋转，SpinQuant 论文也注明 R4 的做法与 QuIP#、QuaRot 类似。区别集中在 R1、R2：</p>
+<ul>
+<li><strong>是否学习</strong>：QuaRot 的旋转都不学习，R1 是随机 Hadamard，R2 位置是固定的 Hadamard；SpinQuant 的 R1、R2 都用随机 Hadamard 初始化，再针对量化后的损失学习。从 LLaMA-3 8B 的数据看，这是精度差距的主要来源：在 SpinQuant 自己的结构里把 R1、R2 换回随机 Hadamard，W4A4KV4 下为 63.9，与 QuaRot + GPTQ 的 63.3 接近；改为学习后升到 65.5（论文 Table 2、Table 5，均使用 GPTQ）。</li>
+<li>在线开销：QuaRot 的在线 Hadamard 位于 Down 投影输入、O 投影输入以及 RoPE 之后的 Q、K 上。<strong>O 投影输入处的这一个负责跨注意力头混合，是叠加在离线按头 Hadamard 之上的额外一步，SpinQuant-Had 没有这一步</strong>。论文写作每个块 2 个对 4 个，按上述位置数，两者实际相差 1 个。</li>
+<li>部署门槛：SpinQuant-NoHad 去掉 R3、R4 后只需替换权重；QuaRot 需要修改模型结构，并依赖专门的算子。</li>
+</ul>
+<p>W4A4KV4 下的精度结果（论文 Table 5）：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>LLaMA-3 8B 零样本准确率</th>
+<th>LLaMA-3 8B WikiText2 困惑度</th>
+<th>LLaMA-3 70B 零样本准确率</th>
+<th>LLaMA-3 70B WikiText2 困惑度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>全精度</td>
+<td>69.6</td>
+<td>6.1</td>
+<td>74.5</td>
+<td>2.8</td>
+</tr>
+<tr>
+<td>QuaRot + RTN</td>
+<td>58.6</td>
+<td>10.9</td>
+<td>41.3</td>
+<td>92.4</td>
+</tr>
+<tr>
+<td>SpinQuant-Had + RTN</td>
+<td>64.1</td>
+<td>7.8</td>
+<td>70.1</td>
+<td>4.1</td>
+</tr>
+<tr>
+<td>QuaRot + GPTQ</td>
+<td>63.3</td>
+<td>8.0</td>
+<td>65.1</td>
+<td>20.2</td>
+</tr>
+<tr>
+<td>SpinQuant-Had + GPTQ</td>
+<td>65.5</td>
+<td>7.3</td>
+<td>69.3</td>
+<td>5.5</td>
+</tr>
+</tbody></table>
+<ul>
+<li>差距在 70B 上最明显：用 RTN 时 QuaRot 跌到 41.3，SpinQuant-Had 仍有 70.1。论文将其归因于随机旋转带来的高方差。</li>
+<li>改用 GPTQ 量化权重后 QuaRot 有所恢复，但 SpinQuant-Had 仍领先：LLaMA-3 8B 高 2.2 分，70B 高 4.2 分。</li>
+</ul>
+<h2 id="关键消融"><a href="#关键消融" class="headerlink" title="关键消融"></a>关键消融</h2><ul>
+<li>学到的旋转稳定优于随机 Hadamard：W4A4KV4、使用 R1–R4 时，LLaMA-3.2 3B 从 58.4 提升到 60.5，LLaMA-3 8B 从 63.9 提升到 65.5。</li>
+<li>对初始化不敏感：使用 RTN 时，随机正交矩阵与随机 Hadamard 矩阵在优化前相差约 10 分（W4A4KV4 下 48.3 对 58.7），经 Cayley 优化后都达到 61.5。</li>
+<li>校准开销小（LLaMA-2 7B，W4A4KV4）：校准样本从 800 条减到 128 条，困惑度不变（6.2）；迭代约 100 步后收敛。换用 C4 作为校准集，结果与 WikiText-2 基本一致（64.3 对 64.0）。</li>
+<li>主要收益来自旋转本身：W4A4KV16 下只用 RTN 量化权重，SpinQuant-Had 在 LLaMA-2 7B &#x2F; 13B &#x2F; 70B 上已达到 61.8 &#x2F; 65.8 &#x2F; 71.1（现有方法最好为 47.8 &#x2F; 44.9 &#x2F; 57.7），在 LLaMA-3 8B 上为 64.6（现有方法最好为 44.9）；叠加 GPTQ 最多再提升 2.3 分。</li>
+<li>量化信噪比提升：LLaMA-2 7B 在 W4A4 下，端到端信噪比从不旋转的 −2.9 dB、随机旋转的 0.9 dB 提升到学习旋转后的 6.8 dB。</li>
+</ul>
+<h2 id="速度与开销"><a href="#速度与开销" class="headerlink" title="速度与开销"></a>速度与开销</h2><p>LLaMA-3 8B 在 MacBook M1 Pro CPU 上的端到端解码速度（论文 Table 6）：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>位宽（W-A）</th>
+<th>解码速度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>全精度</td>
+<td>16-16</td>
+<td>177.15 ms&#x2F;token</td>
+</tr>
+<tr>
+<td>SpinQuant-NoHad</td>
+<td>4-8</td>
+<td>58.88 ms&#x2F;token</td>
+</tr>
+<tr>
+<td>SpinQuant-Had</td>
+<td>4-8</td>
+<td>63.90 ms&#x2F;token</td>
+</tr>
+</tbody></table>
+<ul>
+<li>4-bit 量化带来约 3 倍加速；在线 Hadamard 旋转增加约 8% 延迟。</li>
+<li>GPU 上实现得当时开销更小：LLaMA-3 70B 在 H100 上做 FP8 权重与激活量化，加入 Hadamard 旋转后首 token 延迟和逐 token 延迟只增加约 3%（如 batch size 1、序列长度 4096 时，首 token 延迟为 153.58 ms 对 158.25 ms）。</li>
+<li>离线学习旋转的耗时与 GPTQ 同一量级：LLaMA-3.2 1B &#x2F; 3B、LLaMA-3 8B 分别约 13 &#x2F; 18 &#x2F; 30 分钟（GPTQ 为 8 &#x2F; 13 &#x2F; 20 分钟），LLaMA-2 7B &#x2F; 13B 约 25 &#x2F; 30 分钟，LLaMA-2 70B 约 3.5 小时。</li>
+</ul>
+<h1 id="落地参考"><a href="#落地参考" class="headerlink" title="落地参考"></a>落地参考</h1><h2 id="如何选择版本"><a href="#如何选择版本" class="headerlink" title="如何选择版本"></a>如何选择版本</h2><table>
+<thead>
+<tr>
+<th>目标设置</th>
+<th>推荐版本</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>W4A8（KV cache 8 或 16 bit）</td>
+<td>SpinQuant-NoHad</td>
+<td>SpinQuant-NoHad 距全精度 0.1–2.5 分；只替换权重，不需要新算子；加 Hadamard 收益有限</td>
+</tr>
+<tr>
+<td>W4A4（KV cache 16 或 4 bit）</td>
+<td>SpinQuant-Had</td>
+<td>NoHad 距全精度 6.5–18.6 分，Had 缩小到 1.1–4.1 分；需要快速 Hadamard 算子，CPU 上约增加 8% 延迟</td>
+</tr>
+<tr>
+<td>仅量化权重（W4A16）</td>
+<td>论文只测试了 SpinQuant-Had</td>
+<td>LLaMA-2 7B 困惑度 5.6，与 QuIP#（5.6）、OmniQuant（5.7）相当；相比现有方法的优势不如量化激活时明显</td>
+</tr>
+</tbody></table>
+<h2 id="复现官方代码"><a href="#复现官方代码" class="headerlink" title="复现官方代码"></a>复现官方代码</h2><p>官方仓库是基于 HuggingFace 重新实现的代码（论文结果用 Meta 内部的 LLaMA 代码库跑出），环境要求 Python 3.9、PyTorch 2.0 及以上，并依赖 fast-hadamard-transform。以下命令摘自仓库 README：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs bash">pip install -r requirement.txt<br>git <span class="hljs-built_in">clone</span> https://github.com/Dao-AILab/fast-hadamard-transform.git<br><span class="hljs-built_in">cd</span> fast-hadamard-transform<br>pip install .<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 参数依次为：模型、权重位宽、激活位宽、KV cache 位宽</span><br><span class="hljs-comment"># 最终用 GPTQ 量化权重时，旋转针对 W16A4KV4 学习</span><br>bash scripts/10_optimize_rotation.sh meta-llama/Llama-2-7b 16 4 4<br><span class="hljs-comment"># 将 optimized_rotation_path 指向上一步得到的旋转矩阵，再评测 W4A4KV4</span><br>bash scripts/2_eval_ptq.sh meta-llama/Llama-2-7b 4 4 4<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>运行前把脚本中的 output_rotation_path、output_dir、logging_dir、optimized_rotation_path 改成自己的路径；meta-llama 等需授权的模型要在 access_token 中填入 HF token。</li>
+<li>70B 模型改用 scripts&#x2F;11_optimize_rotation_fsdp.sh 学习旋转。</li>
+<li>评测参数 –optimized_rotation_path 留空时使用随机旋转，可作为对照基线。</li>
+<li>仓库 README 提供了预先优化好的旋转矩阵下载链接。</li>
+</ul>
+<h2 id="现成模型与端侧部署"><a href="#现成模型与端侧部署" class="headerlink" title="现成模型与端侧部署"></a>现成模型与端侧部署</h2><ul>
+<li>2024 年 10 月，Meta 发布了基于 SpinQuant 的 LLaMA-3.2 1B &#x2F; 3B Instruct 4-bit 量化模型：<a target="_blank" rel="noopener" href="https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct-SpinQuant_INT4_EO8">Llama-3.2-1B-Instruct-SpinQuant_INT4_EO8</a>、<a target="_blank" rel="noopener" href="https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct-SpinQuant_INT4_EO8">Llama-3.2-3B-Instruct-SpinQuant_INT4_EO8</a>（<a target="_blank" rel="noopener" href="https://ai.meta.com/blog/meta-llama-quantized-lightweight-models/">官方博客</a>）。</li>
+<li>仓库支持导出到 <a target="_blank" rel="noopener" href="https://github.com/pytorch/executorch/tree/main/examples/models/llama">ExecuTorch</a>，目前支持 4-bit 权重（8B 模型 group size 为 256，更小的模型为 32）加 8-bit 动态激活量化，对应脚本为 scripts&#x2F;31_optimize_rotation_executorch.sh 和 scripts&#x2F;32_eval_ptq_executorch.sh。</li>
+<li>论文附录在指令微调版 LLaMA-3.2 1B &#x2F; 3B 上测试了 W4A8：MMLU（5-shot）分别为 47.3 &#x2F; 62.0，BF16 为 49.3 &#x2F; 63.4，普通 RTN 为 43.4 &#x2F; 60.5。</li>
+</ul>
+<blockquote>
+<p>官方代码采用 CC BY-NC 4.0 许可，仅限非商业使用。Hugging Face 上的量化模型以模型页声明的许可为准，商用前请先确认条款。</p>
+</blockquote>
+<h1 id="局限与开放问题"><a href="#局限与开放问题" class="headerlink" title="局限与开放问题"></a>局限与开放问题</h1><ul>
+<li>依赖推理栈支持：SpinQuant-Had 需要快速 Hadamard 变换算子。部署框架不支持时只能用 SpinQuant-NoHad，而它在 4-bit 激活下仍有明显差距。</li>
+<li>评测范围有限：主要指标是英文零样本常识推理和 WikiText2 困惑度，附录补充了 MMLU 和 TLDR9+ 摘要。代码、数学、中文、长上下文等场景的效果需要自行验证。</li>
+<li>需要反向传播：学习旋转要对整个量化网络做前向和反向计算，70B 模型需要用 FSDP 脚本分布式运行。</li>
+<li>复现存在差异：开源代码是 HuggingFace 重新实现版，README 中的数字与论文略有出入，例如 LLaMA-3 8B 的 W4A4KV4 零样本准确率，README 为 65.2，论文为 65.5。</li>
+<li>论文提出的开放问题：对于离群轴和幅值已知的激活分布，能否推导出最优旋转的闭式解，以及这个解是否真能带来最好的量化效果。另外，第一个 token 常在多个通道上出现大值，旋转后被摊到该 token 的所有通道；先找到并消除这类离群值的来源，可能进一步提升精度。</li>
+</ul>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2405.16406">SpinQuant: LLM Quantization with Learned Rotations</a>：论文原文</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/facebookresearch/SpinQuant">facebookresearch&#x2F;SpinQuant</a>：官方代码</li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2404.00456">QuaRot: Outlier-Free 4-Bit Inference in Rotated LLMs</a>：同期的随机 Hadamard 旋转方法</li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2402.04396">QuIP#: Even Better LLM Quantization with Hadamard Incoherence and Lattice Codebooks</a>：用随机 Hadamard 做非相干处理的权重量化方法</li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2401.15024">SliceGPT: Compress Large Language Models by Deleting Rows and Columns</a>：把 RMSNorm 缩放并入权重、构造旋转不变网络的做法来源</li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2002.01113">Efficient Riemannian Optimization on the Stiefel Manifold via the Cayley Transform</a>：Cayley SGD 原始论文</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96/" class="category-chain-item">模型量化</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%87%8F%E5%8C%96%E8%AE%BA%E6%96%87/" class="print-no-link">#量化论文</a>
+      
+        <a href="/tags/W4A4/" class="print-no-link">#W4A4</a>
+      
+        <a href="/tags/%E6%97%8B%E8%BD%AC/" class="print-no-link">#旋转</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SpinQuant</div>
+      <div>https://jilei-hou.github.io/2026/11/07/SpinQuant/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Jilei Hou</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年11月7日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/11/07/QuaRot/" title="QuaRot">
+                        <span class="hidden-mobile">QuaRot</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

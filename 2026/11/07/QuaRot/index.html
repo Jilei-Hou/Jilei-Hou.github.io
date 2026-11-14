@@ -21,7 +21,7 @@
   
     <meta name="description" content="一句话总结： QuaRot 用随机 Hadamard 矩阵”旋转”LLM 的隐藏状态、FFN 激活和 KV cache，在不改变模型输出的前提下摊平激活中的离群值，使权重、激活、KV cache 全部量化到 4 bit，所有线性层的矩阵乘都在 INT4 上完成，而且不需要为任何离群通道保留高精度。  本文面向做大模型推理优化和模型压缩的同学，默认读者了解 INT4 &#x2F; INT8 量化与">
 <meta property="og:type" content="article">
-<meta property="og:title" content="QuaRot">
+<meta property="og:title" content="QuaRot：用旋转消除离群值，实现 LLM 端到端 4-bit 推理">
 <meta property="og:url" content="https://jilei-hou.github.io/2026/11/07/QuaRot/index.html">
 <meta property="og:site_name" content="455のblog">
 <meta property="og:description" content="一句话总结： QuaRot 用随机 Hadamard 矩阵”旋转”LLM 的隐藏状态、FFN 激活和 KV cache，在不改变模型输出的前提下摊平激活中的离群值，使权重、激活、KV cache 全部量化到 4 bit，所有线性层的矩阵乘都在 INT4 上完成，而且不需要为任何离群通道保留高精度。  本文面向做大模型推理优化和模型压缩的同学，默认读者了解 INT4 &#x2F; INT8 量化与">
@@ -29,7 +29,7 @@
 <meta property="og:image" content="https://jilei-hou.github.io/img/QuaRot/fig1.png">
 <meta property="og:image" content="https://jilei-hou.github.io/img/QuaRot/pipeline.jpg">
 <meta property="article:published_time" content="2026-11-07T08:30:00.000Z">
-<meta property="article:modified_time" content="2026-11-14T09:12:28.112Z">
+<meta property="article:modified_time" content="2026-11-14T09:24:35.242Z">
 <meta property="article:author" content="Jilei Hou">
 <meta property="article:tag" content="量化论文">
 <meta property="article:tag" content="W4A4">
@@ -39,7 +39,7 @@
   
   
   
-  <title>QuaRot - 455のblog</title>
+  <title>QuaRot：用旋转消除离群值，实现 LLM 端到端 4-bit 推理 - 455のblog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -310,7 +310,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="QuaRot"></span>
+            <span id="subtitle" data-typed-text="QuaRot：用旋转消除离群值，实现 LLM 端到端 4-bit 推理"></span>
           
         </div>
 
@@ -383,7 +383,7 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">QuaRot</h1>
+            <h1 id="seo-header">QuaRot：用旋转消除离群值，实现 LLM 端到端 4-bit 推理</h1>
             
             
               <div class="markdown-body">
@@ -916,7 +916,7 @@ M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">�
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>QuaRot</div>
+      <div>QuaRot：用旋转消除离群值，实现 LLM 端到端 4-bit 推理</div>
       <div>https://jilei-hou.github.io/2026/11/07/QuaRot/</div>
     </div>
     <div class="license-meta">
@@ -961,9 +961,9 @@ M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">�
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2026/11/07/SpinQuant/" title="SpinQuant">
+                      <a href="/2026/11/07/SpinQuant/" title="SpinQuant：用学习到的旋转矩阵实现 LLM 4-bit 量化">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">SpinQuant</span>
+                        <span class="hidden-mobile">SpinQuant：用学习到的旋转矩阵实现 LLM 4-bit 量化</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
